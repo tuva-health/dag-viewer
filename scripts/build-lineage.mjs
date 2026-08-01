@@ -151,7 +151,7 @@ const normalizedTargetBaseNames = new Set([
 
 const labelOverrides = {
   appointment: "Appointment",
-  ahrq_measures: "AHRQ Measures",
+  ahrq_quality_indicators: "AHRQ Quality Indicators",
   ccsr: "CCSR",
   claims_enrollment: "Claims Enrollment Flags",
   cms_hcc: "CMS HCC",
