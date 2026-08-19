@@ -4,7 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  TUVA_DAG_GITHUB_REF = "main"
+  TUVA_DAG_REPO_URL = "https://github.com/tuva-health/tuva-core.git"
+  TUVA_DAG_GITHUB_REF = "9b59760465c757e94a41b4ac2cede7c40c2e9086"
+  TUVA_DAG_SEED_PREVIEW_ROW_LIMIT = "1000"
 
 [[headers]]
   for = "/*"
@@ -12,4 +14,3 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-

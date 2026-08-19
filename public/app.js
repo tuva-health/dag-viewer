@@ -40,7 +40,7 @@ const MIN_SCALE = 0.18;
 const MAX_SCALE = 1.8;
 const FIT_SIDE_INSET = 36;
 const FIT_VERTICAL_BUFFER = 28;
-const LAYOUT_STORAGE_VERSION = 5;
+const LAYOUT_STORAGE_VERSION = 3;
 const DEFAULT_VIEWPORT = Object.freeze({
   x: 160,
   y: 120,
@@ -52,157 +52,112 @@ const INITIAL_OPEN_NODE_ID = initialSearchParams.get("openNode");
 const INITIAL_EDIT_FIELD = initialSearchParams.get("edit");
 const INITIAL_MODAL_TAB = initialSearchParams.get("tab");
 const SYSTEM_OVERVIEW_TARGET_KEY = "system_overview";
-const SYSTEM_OVERVIEW_LAYOUT_VERSION = "32";
-const SYSTEM_OVERVIEW_ENTRY_WIDTH = 204;
+const SYSTEM_OVERVIEW_LAYOUT_VERSION = "19";
+const SYSTEM_OVERVIEW_ENTRY_WIDTH = 212;
 const SYSTEM_OVERVIEW_ENTRY_HEIGHT = 52;
 const SYSTEM_OVERVIEW_STAGE_PADDING_X = 24;
 const SYSTEM_OVERVIEW_STAGE_PADDING_Y = 18;
 const SYSTEM_OVERVIEW_GROUP_PADDING_X = 14;
 const SYSTEM_OVERVIEW_GROUP_PADDING_TOP = 38;
 const SYSTEM_OVERVIEW_GROUP_PADDING_BOTTOM = 12;
-const SYSTEM_OVERVIEW_ARROWHEAD_SIZE = 6.4;
-const SYSTEM_OVERVIEW_ARROWHEAD_REF_X = 5.6;
 const WHEEL_ZOOM_SPEED = 0.00145;
 const SYSTEM_OVERVIEW_HIDDEN_POSITION = Object.freeze({
   x: 2240,
   y: 2060
 });
-const DAG_LAUNCHER_HIDDEN_TARGET_KEYS = new Set([]);
 
 const SYSTEM_OVERVIEW_STAGE_TITLES = Object.freeze({
   inputLayer: "Input Layer",
-  normalizedLayer: "Normalized Layer",
   claimsPreprocessing: "Claims Preprocessing",
   coreDataModel: "Core Data Model",
-  dataMarts: "Data Marts",
-  semanticLayer: "Semantic Layer"
-});
-
-const SYSTEM_OVERVIEW_STAGE_DESCRIPTIONS = Object.freeze({
-  inputLayer: "Source-specific payer, provider, and attribution tables mapped into Tuva's required input contracts.",
-  normalizedLayer: "Standardized models that cast, clean, and normalize input data before downstream transformations.",
-  claimsPreprocessing: "Reusable claims logic for enrollment flags, member months, service categories, encounters, and attribution.",
-  coreDataModel: "Tuva Core's normalized, enriched longitudinal patient data model.",
-  dataMarts: "Use-case-specific transformations that run on top of Tuva Core.",
-  semanticLayer: "Metric-ready models and definitions for reporting, dashboards, and applications."
+  dataMarts: "Data Marts"
 });
 
 const SYSTEM_OVERVIEW_ENTRY_LAYOUT = Object.freeze([
-  { id: "input-eligibility", targetKey: "input_layer__eligibility", label: "Eligibility", stage: "inputLayer", group: "inputPayer", groupLabel: "Payer", x: 34, y: 200 },
-  { id: "input-medical-claim", targetKey: "input_layer__medical_claim", label: "Medical Claim", stage: "inputLayer", group: "inputPayer", x: 254, y: 200 },
-  { id: "input-pharmacy-claim", targetKey: "input_layer__pharmacy_claim", label: "Pharmacy Claim", stage: "inputLayer", group: "inputPayer", x: 34, y: 270 },
-  { id: "input-provider-attribution", targetKey: "input_layer__provider_attribution", label: "Provider Attribution", stage: "inputLayer", group: "inputPayer", x: 254, y: 270 },
+  { id: "input-eligibility", targetKey: "input_layer__eligibility", label: "eligibility", stage: "inputLayer", group: "inputClaims", groupLabel: "Claims", x: 138, y: 214 },
+  { id: "input-medical-claim", targetKey: "input_layer__medical_claim", label: "medical_claim", stage: "inputLayer", group: "inputClaims", groupLabel: "Claims", x: 138, y: 290 },
+  { id: "input-pharmacy-claim", targetKey: "input_layer__pharmacy_claim", label: "pharmacy_claim", stage: "inputLayer", group: "inputClaims", groupLabel: "Claims", x: 138, y: 366 },
 
-  { id: "input-appointment", targetKey: "input_layer__appointment", label: "Appointment", stage: "inputLayer", group: "inputProvider", groupLabel: "Provider", x: 34, y: 390 },
-  { id: "input-condition", targetKey: "input_layer__condition", label: "Condition", stage: "inputLayer", group: "inputProvider", x: 254, y: 390 },
-  { id: "input-encounter", targetKey: "input_layer__encounter", label: "Encounter", stage: "inputLayer", group: "inputProvider", x: 34, y: 460 },
-  { id: "input-immunization", targetKey: "input_layer__immunization", label: "Immunization", stage: "inputLayer", group: "inputProvider", x: 254, y: 460 },
-  { id: "input-lab-result", targetKey: "input_layer__lab_result", label: "Lab Result", stage: "inputLayer", group: "inputProvider", x: 34, y: 530 },
-  { id: "input-location", targetKey: "input_layer__location", label: "Location", stage: "inputLayer", group: "inputProvider", x: 254, y: 530 },
-  { id: "input-medication", targetKey: "input_layer__medication", label: "Medication", stage: "inputLayer", group: "inputProvider", x: 34, y: 600 },
-  { id: "input-observation", targetKey: "input_layer__observation", label: "Observation", stage: "inputLayer", group: "inputProvider", x: 254, y: 600 },
-  { id: "input-patient", targetKey: "input_layer__patient", label: "Patient", stage: "inputLayer", group: "inputProvider", x: 34, y: 670 },
-  { id: "input-practitioner", targetKey: "input_layer__practitioner", label: "Practitioner", stage: "inputLayer", group: "inputProvider", x: 254, y: 670 },
-  { id: "input-procedure", targetKey: "input_layer__procedure", label: "Procedure", stage: "inputLayer", group: "inputProvider", x: 34, y: 740 },
+  { id: "input-appointment", targetKey: "input_layer__appointment", label: "appointment", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 488 },
+  { id: "input-condition", targetKey: "input_layer__condition", label: "condition", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 564 },
+  { id: "input-encounter", targetKey: "input_layer__encounter", label: "encounter", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 640 },
+  { id: "input-immunization", targetKey: "input_layer__immunization", label: "immunization", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 716 },
+  { id: "input-lab-result", targetKey: "input_layer__lab_result", label: "lab_result", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 792 },
+  { id: "input-location", targetKey: "input_layer__location", label: "location", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 868 },
+  { id: "input-medication", targetKey: "input_layer__medication", label: "medication", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 944 },
+  { id: "input-observation", targetKey: "input_layer__observation", label: "observation", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 1020 },
+  { id: "input-patient", targetKey: "input_layer__patient", label: "patient", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 1096 },
+  { id: "input-practitioner", targetKey: "input_layer__practitioner", label: "practitioner", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 1172 },
+  { id: "input-procedure", targetKey: "input_layer__procedure", label: "procedure", stage: "inputLayer", group: "inputClinical", groupLabel: "Clinical", x: 138, y: 1248 },
 
-  { id: "normalized-eligibility", targetKey: "normalized_eligibility", label: "Eligibility", stage: "normalizedLayer", group: "normalizedPayer", groupLabel: "Payer", x: 560, y: 200 },
-  { id: "normalized-medical-claim", targetKey: "normalized_medical_claim", label: "Medical Claim", stage: "normalizedLayer", group: "normalizedPayer", x: 780, y: 200 },
-  { id: "normalized-pharmacy-claim", targetKey: "normalized_pharmacy_claim", label: "Pharmacy Claim", stage: "normalizedLayer", group: "normalizedPayer", x: 560, y: 270 },
-  { id: "normalized-attribution", targetKey: "normalized_attribution", label: "Attribution", stage: "normalizedLayer", group: "normalizedPayer", x: 780, y: 270 },
+  { id: "input-provider-attribution", targetKey: "input_layer__provider_attribution", label: "provider_attribution", stage: "inputLayer", group: "inputOther", groupLabel: "Other", x: 138, y: 1370 },
 
-  { id: "normalized-appointment", targetKey: "normalized_appointment", label: "Appointment", stage: "normalizedLayer", group: "normalizedProvider", groupLabel: "Provider", x: 560, y: 390 },
-  { id: "normalized-condition", targetKey: "normalized_condition", label: "Condition", stage: "normalizedLayer", group: "normalizedProvider", x: 780, y: 390 },
-  { id: "normalized-encounter", targetKey: "normalized_encounter", label: "Encounter", stage: "normalizedLayer", group: "normalizedProvider", x: 560, y: 460 },
-  { id: "normalized-immunization", targetKey: "normalized_immunization", label: "Immunization", stage: "normalizedLayer", group: "normalizedProvider", x: 780, y: 460 },
-  { id: "normalized-lab-result", targetKey: "normalized_lab_result", label: "Lab Result", stage: "normalizedLayer", group: "normalizedProvider", x: 560, y: 530 },
-  { id: "normalized-location", targetKey: "normalized_location", label: "Location", stage: "normalizedLayer", group: "normalizedProvider", x: 780, y: 530 },
-  { id: "normalized-medication", targetKey: "normalized_medication", label: "Medication", stage: "normalizedLayer", group: "normalizedProvider", x: 560, y: 600 },
-  { id: "normalized-observation", targetKey: "normalized_observation", label: "Observation", stage: "normalizedLayer", group: "normalizedProvider", x: 780, y: 600 },
-  { id: "normalized-patient", targetKey: "normalized_patient", label: "Patient", stage: "normalizedLayer", group: "normalizedProvider", x: 560, y: 670 },
-  { id: "normalized-practitioner", targetKey: "normalized_practitioner", label: "Practitioner", stage: "normalizedLayer", group: "normalizedProvider", x: 780, y: 670 },
-  { id: "normalized-procedure", targetKey: "normalized_procedure", label: "Procedure", stage: "normalizedLayer", group: "normalizedProvider", x: 560, y: 740 },
+  { id: "claims-claims-enrollment", targetKey: "claims_enrollment", label: "claims_enrollment", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 536, y: 214 },
+  { id: "claims-encounters", targetKey: "encounters", label: "encounters", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 536, y: 290 },
+  { id: "claims-service-categories", targetKey: "service_categories", label: "service_categories", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 536, y: 366 },
 
-  { id: "claims-claims-enrollment", targetKey: "claims_enrollment", label: "Claims Enrollment Flags", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 1120, y: 200 },
-  { id: "claims-encounters", targetKey: "encounters", label: "Encounters", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 1120, y: 270 },
-  { id: "claims-member-month", targetKey: "claims_member_month", label: "Member Month", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 1120, y: 340 },
-  { id: "claims-service-categories", targetKey: "service_categories", label: "Service Categories", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 1120, y: 410 },
-  { id: "claims-attribution", targetKey: "provider_attribution", label: "Attribution", stage: "claimsPreprocessing", group: "claimsPreprocessing", x: 1120, y: 480 },
+  { id: "core-eligibility", targetKey: "eligibility", label: "eligibility", stage: "coreDataModel", group: "coreClaims", groupLabel: "Claims", x: 980, y: 214 },
+  { id: "core-medical-claim", targetKey: "medical_claim", label: "medical_claim", stage: "coreDataModel", group: "coreClaims", x: 980, y: 290 },
+  { id: "core-member-months", targetKey: "member_months", label: "member_months", stage: "coreDataModel", group: "coreClaims", x: 980, y: 366 },
+  { id: "core-pharmacy-claim", targetKey: "pharmacy_claim", label: "pharmacy_claim", stage: "coreDataModel", group: "coreClaims", x: 980, y: 442 },
 
-  { id: "core-eligibility", targetKey: "eligibility", label: "Eligibility", stage: "coreDataModel", group: "corePayer", groupLabel: "Payer", x: 1450, y: 200 },
-  { id: "core-medical-claim", targetKey: "medical_claim", label: "Medical Claim", stage: "coreDataModel", group: "corePayer", x: 1670, y: 200 },
-  { id: "core-member-month", targetKey: "member_month", label: "Member Month", stage: "coreDataModel", group: "corePayer", x: 1450, y: 270 },
-  { id: "core-pharmacy-claim", targetKey: "pharmacy_claim", label: "Pharmacy Claim", stage: "coreDataModel", group: "corePayer", x: 1670, y: 270 },
-  { id: "core-cost", targetKey: "cost", label: "Cost", stage: "coreDataModel", group: "corePayer", x: 1450, y: 340 },
-  { id: "core-utilization", targetKey: "utilization", label: "Utilization", stage: "coreDataModel", group: "corePayer", x: 1670, y: 340 },
+  { id: "core-appointment", targetKey: "appointment", label: "appointment", stage: "coreDataModel", group: "coreClinical", groupLabel: "Clinical", x: 980, y: 564 },
+  { id: "core-immunization", targetKey: "immunization", label: "immunization", stage: "coreDataModel", group: "coreClinical", x: 980, y: 640 },
+  { id: "core-lab-result", targetKey: "lab_result", label: "lab_result", stage: "coreDataModel", group: "coreClinical", x: 980, y: 716 },
+  { id: "core-medication", targetKey: "medication", label: "medication", stage: "coreDataModel", group: "coreClinical", x: 980, y: 792 },
+  { id: "core-observation", targetKey: "observation", label: "observation", stage: "coreDataModel", group: "coreClinical", x: 980, y: 868 },
 
-  { id: "core-appointment", targetKey: "appointment", label: "Appointment", stage: "coreDataModel", group: "coreProvider", groupLabel: "Provider", x: 1450, y: 460 },
-  { id: "core-immunization", targetKey: "immunization", label: "Immunization", stage: "coreDataModel", group: "coreProvider", x: 1670, y: 460 },
-  { id: "core-lab-result", targetKey: "lab_result", label: "Lab Result", stage: "coreDataModel", group: "coreProvider", x: 1450, y: 530 },
-  { id: "core-observation", targetKey: "observation", label: "Observation", stage: "coreDataModel", group: "coreProvider", x: 1670, y: 530 },
+  { id: "core-condition", targetKey: "condition", label: "condition", stage: "coreDataModel", group: "coreShared", groupLabel: "Shared", x: 980, y: 990 },
+  { id: "core-encounter", targetKey: "encounter", label: "encounter", stage: "coreDataModel", group: "coreShared", x: 980, y: 1066 },
+  { id: "core-location", targetKey: "location", label: "location", stage: "coreDataModel", group: "coreShared", x: 980, y: 1142 },
+  { id: "core-patient", targetKey: "patient", label: "patient", stage: "coreDataModel", group: "coreShared", x: 980, y: 1218 },
+  { id: "core-practitioner", targetKey: "practitioner", label: "practitioner", stage: "coreDataModel", group: "coreShared", x: 980, y: 1294 },
+  { id: "core-procedure", targetKey: "procedure", label: "procedure", stage: "coreDataModel", group: "coreShared", x: 980, y: 1370 },
 
-  { id: "core-condition", targetKey: "condition", label: "Condition", stage: "coreDataModel", group: "coreShared", groupLabel: "Shared", x: 1450, y: 650 },
-  { id: "core-encounter", targetKey: "encounter", label: "Encounter", stage: "coreDataModel", group: "coreShared", x: 1670, y: 650 },
-  { id: "core-location", targetKey: "location", label: "Location", stage: "coreDataModel", group: "coreShared", x: 1450, y: 720 },
-  { id: "core-medication", targetKey: "medication", label: "Medication", stage: "coreDataModel", group: "coreShared", x: 1670, y: 720 },
-  { id: "core-patient", targetKey: "patient", label: "Patient", stage: "coreDataModel", group: "coreShared", x: 1450, y: 790 },
-  { id: "core-practitioner", targetKey: "practitioner", label: "Practitioner", stage: "coreDataModel", group: "coreShared", x: 1670, y: 790 },
-  { id: "core-procedure", targetKey: "procedure", label: "Procedure", stage: "coreDataModel", group: "coreShared", x: 1450, y: 860 },
-  { id: "core-person-id-crosswalk", targetKey: "person_id_crosswalk", label: "Person ID Crosswalk", stage: "coreDataModel", group: "coreShared", x: 1670, y: 860 },
+  { id: "core-person-id-crosswalk", targetKey: "person_id_crosswalk", label: "person_id_crosswalk", stage: "coreDataModel", group: "coreOther", groupLabel: "Other", x: 980, y: 1512 },
 
-  { id: "mart-ccsr", targetKey: "ccsr", label: "AHRQ CCSRs", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 200 },
-  { id: "mart-ahrq-quality-indicators", targetKey: "ahrq_quality_indicators", label: "AHRQ Quality Indicators", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 270 },
-  { id: "mart-chronic-conditions", targetKey: "chronic_conditions", label: "CMS Chronic Conditions", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 340 },
-  { id: "mart-cms-hcc", targetKey: "cms_hcc", label: "CMS-HCCs", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 410 },
-  { id: "mart-quality-measures", targetKey: "quality_measures", label: "Quality Measures", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 480 },
-  { id: "mart-nyu-ed-classification", targetKey: "ed_classification", label: "NYU ED Classification", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 550 },
-
-  { id: "semantic-layer", targetKey: "semantic_layer", label: "Semantic Layer", stage: "semanticLayer", group: "semanticLayerAll", x: 2050, y: 760 }
+  { id: "mart-ahrq-measures", targetKey: "ahrq_measures", label: "ahrq_measures", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 214 },
+  { id: "mart-ccsr", targetKey: "ccsr", label: "ccsr", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 290 },
+  { id: "mart-chronic-conditions", targetKey: "chronic_conditions", label: "chronic_conditions", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 366 },
+  { id: "mart-cms-hcc", targetKey: "cms_hcc", label: "cms_hcc", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 442 },
+  { id: "mart-ed-classification", targetKey: "ed_classification", label: "ed_classification", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 518 },
+  { id: "mart-financial-pmpm", targetKey: "financial_pmpm", label: "financial_pmpm", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 594 },
+  { id: "mart-hcc-recapture", targetKey: "hcc_recapture", label: "hcc_recapture", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 670 },
+  { id: "mart-hcc-suspecting", targetKey: "hcc_suspecting", label: "hcc_suspecting", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 746 },
+  { id: "mart-pharmacy", targetKey: "pharmacy", label: "pharmacy", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 822 },
+  { id: "mart-provider-attribution", targetKey: "provider_attribution", label: "provider_attribution", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 898 },
+  { id: "mart-quality-measures", targetKey: "quality_measures", label: "quality_measures", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 974 },
+  { id: "mart-readmissions", targetKey: "readmissions", label: "readmissions", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 1050 },
+  { id: "mart-semantic-layer", targetKey: "semantic_layer", label: "semantic_layer", stage: "dataMarts", group: "dataMartsAll", x: 1402, y: 1126 }
 ]);
 
 const SYSTEM_OVERVIEW_CONNECTOR_SPECS = Object.freeze([
   {
-    from: { type: "stage", key: "inputLayer", side: "right", alignEntryId: "input-medical-claim" },
-    to: { type: "stage", key: "normalizedLayer", side: "left", alignEntryId: "normalized-medical-claim" }
+    from: { type: "stage", key: "inputLayer", side: "right" },
+    to: { type: "stage", key: "claimsPreprocessing", side: "left" }
   },
   {
-    from: { type: "stage", key: "normalizedLayer", side: "right", alignEntryId: "normalized-pharmacy-claim" },
-    to: { type: "stage", key: "claimsPreprocessing", side: "left", alignEntryId: "claims-member-month" }
+    from: { type: "stage", key: "inputLayer", side: "right" },
+    to: { type: "stage", key: "coreDataModel", side: "left" }
   },
   {
-    from: { type: "stage", key: "normalizedLayer", side: "right", alignEntryId: "normalized-patient" },
-    to: { type: "stage", key: "coreDataModel", side: "left", alignEntryId: "core-patient" }
+    from: { type: "stage", key: "claimsPreprocessing", side: "right" },
+    to: { type: "stage", key: "coreDataModel", side: "left" }
   },
   {
-    from: { type: "stage", key: "claimsPreprocessing", side: "right", alignEntryId: "claims-member-month" },
-    to: { type: "stage", key: "coreDataModel", side: "left", alignEntryId: "core-member-month" }
-  },
-  {
-    from: { type: "stage", key: "coreDataModel", side: "right", alignEntryId: "core-encounter" },
-    to: { type: "stage", key: "dataMarts", side: "left", alignEntryId: "mart-chronic-conditions" }
-  },
-  {
-    from: { type: "stage", key: "dataMarts", side: "bottom" },
-    to: { type: "stage", key: "semanticLayer", side: "top" }
-  },
-  {
-    from: { type: "stage", key: "coreDataModel", side: "right", alignEntryId: "core-person-id-crosswalk" },
-    to: { type: "stage", key: "semanticLayer", side: "left" }
+    from: { type: "stage", key: "coreDataModel", side: "right" },
+    to: { type: "stage", key: "dataMarts", side: "left" }
   }
 ]);
 
 const TARGET_PANEL_GROUP_DEFINITIONS = Object.freeze({
   "Input Layer": [
     {
-      label: "Payer",
-      keys: [
-        "input_layer__eligibility",
-        "input_layer__medical_claim",
-        "input_layer__pharmacy_claim",
-        "input_layer__provider_attribution"
-      ]
+      label: "Claims",
+      keys: ["input_layer__eligibility", "input_layer__medical_claim", "input_layer__pharmacy_claim"]
     },
     {
-      label: "Provider",
+      label: "Clinical",
       keys: [
         "input_layer__appointment",
         "input_layer__condition",
@@ -216,75 +171,44 @@ const TARGET_PANEL_GROUP_DEFINITIONS = Object.freeze({
         "input_layer__practitioner",
         "input_layer__procedure"
       ]
-    }
-  ],
-  "Normalized Layer": [
-    {
-      label: "Payer",
-      keys: ["normalized_eligibility", "normalized_medical_claim", "normalized_pharmacy_claim", "normalized_attribution"]
     },
     {
-      label: "Provider",
-      keys: [
-        "normalized_appointment",
-        "normalized_condition",
-        "normalized_encounter",
-        "normalized_immunization",
-        "normalized_lab_result",
-        "normalized_location",
-        "normalized_medication",
-        "normalized_observation",
-        "normalized_patient",
-        "normalized_practitioner",
-        "normalized_procedure"
-      ]
+      label: "Other",
+      keys: ["input_layer__provider_attribution"]
     }
   ],
   "Claims Preprocessing": [
     {
       label: "Claims",
-      keys: ["provider_attribution", "claims_enrollment", "encounters", "claims_member_month", "service_categories"]
+      keys: ["claims_enrollment", "encounters", "service_categories"]
     }
   ],
   Core: [
     {
-      label: "Payer",
-      keys: ["cost", "eligibility", "medical_claim", "member_month", "pharmacy_claim", "utilization"]
+      label: "Claims",
+      keys: ["eligibility", "medical_claim", "member_months", "pharmacy_claim"]
     },
     {
-      label: "Provider",
-      keys: ["appointment", "immunization", "lab_result", "observation"]
+      label: "Clinical",
+      keys: ["appointment", "immunization", "lab_result", "medication", "observation"]
     },
     {
       label: "Shared",
-      keys: ["condition", "encounter", "location", "medication", "patient", "practitioner", "procedure", "person_id_crosswalk"]
-    }
-  ],
-  "Data Marts": [
+      keys: ["condition", "encounter", "location", "patient", "practitioner", "procedure"]
+    },
     {
-      label: "Data Marts",
-      keys: ["ccsr", "ahrq_quality_indicators", "chronic_conditions", "cms_hcc", "quality_measures", "ed_classification"]
-    }
-  ],
-  "Semantic Layer": [
-    {
-      label: "Semantic Layer",
-      keys: ["semantic_layer"]
+      label: "Other",
+      keys: ["person_id_crosswalk"]
     }
   ]
 });
 
 const nodeTypeColors = {
-  dag: "#e9ddff",
-  input: "#fde1e1",
-  intermediate: "#edece8",
-  output: "#dceeff",
-  terminology: "#fff3bf"
+  input: "#d86b63",
+  intermediate: "#b5b2ab",
+  output: "#66b1e2",
+  terminology: "#ffcc08"
 };
-
-const outputDataModelCategories = new Set(["Core", "Data Marts", "Semantic Layer"]);
-const nonDataModelOutputSchemas = new Set(["claims_preprocessing", "input_layer", "intermediate", "normalized_layer"]);
-const payerInputLayerTables = new Set(["eligibility", "medical_claim", "pharmacy_claim", "provider_attribution"]);
 
 const state = {
   payload: null,
@@ -308,7 +232,6 @@ const state = {
   layoutMeta: null,
   ignoreBackdropClickUntil: 0,
   drag: null,
-  dagDrillStack: [],
   needsInitialFit: false
 };
 
@@ -338,31 +261,27 @@ async function boot() {
 
 async function fetchLineage({ preserveSelection = true, targetKey = null } = {}) {
   const requestedTargetKey = targetKey || state.payload?.target?.key || state.refresh.activeTargetKey || "appointment";
-  const body = await loadLineageBody(requestedTargetKey);
-  applyLineageResponse(body, { preserveSelection });
-}
-
-async function loadLineageBody(targetKey) {
   let response;
 
   if (IS_STATIC_MODE) {
-    const requestUrl = `${STATIC_DATA_BASE_URL}/${encodeURIComponent(targetKey)}-lineage.json`;
+    const requestUrl = `${STATIC_DATA_BASE_URL}/${encodeURIComponent(requestedTargetKey)}-lineage.json`;
     response = await fetch(requestUrl, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Failed to load ${requestUrl}: ${response.status}`);
     }
   } else {
-    const requestUrl = `${LINEAGE_API_URL}?targetKey=${encodeURIComponent(targetKey)}`;
+    const requestUrl = `${LINEAGE_API_URL}?targetKey=${encodeURIComponent(requestedTargetKey)}`;
     response = await fetch(requestUrl, { cache: "no-store", credentials: "include" });
     if (!response.ok) {
       throw new Error(`Failed to load ${requestUrl}: ${response.status}`);
     }
   }
 
-  return response.json();
+  const body = await response.json();
+  applyLineageResponse(body, { preserveSelection });
 }
 
-function applyLineageResponse(body, { preserveSelection = true, clearInlineExpansions = true } = {}) {
+function applyLineageResponse(body, { preserveSelection = true } = {}) {
   const previousPayload = state.payload;
   const previousTargetKey = previousPayload?.target?.key || null;
   const previousActiveNodeId = state.activeNodeId;
@@ -374,9 +293,6 @@ function applyLineageResponse(body, { preserveSelection = true, clearInlineExpan
   state.capabilities = body.capabilities || { canEdit: false };
   state.targets = Array.isArray(body.targets) ? body.targets : state.targets;
   state.refresh = body.refresh || createDefaultRefreshState();
-  if (clearInlineExpansions) {
-    state.dagDrillStack = [];
-  }
   state.activeNodeId = chooseNodeId({
     payload: state.payload,
     preferredNodeId: preserveSelection ? previousActiveNodeId : null,
@@ -416,6 +332,7 @@ function initializeSceneState({ previousTargetKey, previousViewport, previousPos
   const layoutPlan = deriveLayoutPlan(state.payload.nodes, state.payload.edges);
   const sameTarget = previousTargetKey === targetKey;
   const hasMatchingStoredLayout = isMatchingLayoutMeta(storedLayoutMeta, layoutPlan.signature);
+  const allowMismatchedStoredManualLayout = targetKey !== SYSTEM_OVERVIEW_TARGET_KEY;
   const shouldPreserveCurrentPositions = Boolean(
     sameTarget &&
       preserveSelection &&
@@ -426,7 +343,7 @@ function initializeSceneState({ previousTargetKey, previousViewport, previousPos
     !shouldPreserveCurrentPositions &&
       isCurrentLayoutMeta(storedLayoutMeta) &&
       storedLayoutMeta.manualAdjusted &&
-      hasMatchingStoredLayout
+      (allowMismatchedStoredManualLayout || hasMatchingStoredLayout)
   );
 
   state.sceneSize = layoutPlan.sceneSize;
@@ -646,234 +563,32 @@ function render() {
 
 function renderNode(node) {
   const position = state.positions[node.id] || { x: 120, y: 120 };
+  const accentColor = resolveNodeColor(node.nodeType);
   const isBoundary = isDagBoundaryNode(node);
-  const presentation = getNodePresentation(node);
-  const display = isBoundary
-    ? getDagBoundaryDisplay(node)
-    : {
-        primaryLabel: getNodeCardPrimaryLabel(node),
-        secondaryLabel: getNodeCardSecondaryLabel(node)
-      };
-  const badge = getNodeBadge(node);
+  const primaryLabel = isBoundary ? node.name : node.technical?.alias || node.name;
+  const secondaryLabel = isBoundary
+    ? node.folderLabel || node.layer || ""
+    : node.technical?.schemaName || node.folderLabel || node.layer || "";
 
   return `
     <button
-      class="dag-node dag-node--${escapeAttribute(presentation.kind)} ${node.id === state.activeNodeId ? "is-active" : ""} ${
-        node.id === state.openNodeId ? "is-open" : ""
-      } ${
+      class="dag-node ${node.id === state.activeNodeId ? "is-active" : ""} ${node.id === state.openNodeId ? "is-open" : ""} ${
         isBoundary ? "is-dag-boundary" : ""
       }"
       data-node-id="${escapeAttribute(node.id)}"
       type="button"
-      style="left:${position.x}px;top:${position.y}px;"
+      style="left:${position.x}px;top:${position.y}px;--node-color:${accentColor};"
     >
+      <span class="dag-node-accent" aria-hidden="true"></span>
       <span class="dag-node-copy">
         <span class="dag-node-header">
-          <span class="dag-node-name">${escapeHtml(display.primaryLabel)}</span>
-          ${
-            badge
-              ? `<span class="dag-node-badge ${escapeAttribute(badge.className || "")}" ${badge.dataAttribute || ""} title="${escapeAttribute(
-                  badge.title
-                )}">${escapeHtml(badge.label)}</span>`
-              : ""
-          }
+          <span class="dag-node-name">${escapeHtml(primaryLabel)}</span>
+          ${isBoundary ? '<span class="dag-node-badge">DAG</span>' : ""}
         </span>
-        ${display.secondaryLabel ? `<span class="dag-node-layer">${escapeHtml(display.secondaryLabel)}</span>` : ""}
+        ${secondaryLabel ? `<span class="dag-node-layer">${escapeHtml(secondaryLabel)}</span>` : ""}
       </span>
     </button>
   `;
-}
-
-function getNodePresentation(node) {
-  if (isDagBoundaryNode(node)) {
-    return { kind: "dag" };
-  }
-
-  if (isSeedNode(node) || node?.nodeType === "terminology") {
-    return { kind: "terminology" };
-  }
-
-  if (isInputNode(node)) {
-    return { kind: "input" };
-  }
-
-  if (isOutputDataModelNode(node)) {
-    return { kind: "output" };
-  }
-
-  return { kind: "intermediate" };
-}
-
-function getNodeBadge(node) {
-  if (isDagBoundaryNode(node)) {
-    return {
-      label: "DAG",
-      title: "Expand this DAG",
-      className: "dag-node-badge--dag",
-      dataAttribute: 'data-dag-badge="true"'
-    };
-  }
-
-  if (isActualInputLayerTableNode(node)) {
-    const inputType = getInputLayerTypeLabel(node);
-
-    return {
-      label: inputType,
-      title: `${inputType} input layer table`,
-      className: "dag-node-badge--input"
-    };
-  }
-
-  return null;
-}
-
-function isOutputDataModelNode(node) {
-  if (node?.nodeType !== "output") {
-    return false;
-  }
-
-  const schemaName = node?.technical?.schemaName || "";
-
-  if (schemaName === "core" || schemaName === "semantic_layer") {
-    return true;
-  }
-
-  if (nonDataModelOutputSchemas.has(schemaName)) {
-    return false;
-  }
-
-  const categoryLabel = state.payload?.target?.categoryLabel || "";
-
-  return outputDataModelCategories.has(categoryLabel);
-}
-
-function getNodeCardPrimaryLabel(node) {
-  if (isActualInputLayerTableNode(node)) {
-    return formatInputLayerTableDisplayName(node);
-  }
-
-  if (isSeedNode(node)) {
-    return formatSeedDisplayName(node);
-  }
-
-  return node?.technical?.alias || node?.name || "";
-}
-
-function getNodeCardSecondaryLabel(node) {
-  if (isActualInputLayerTableNode(node)) {
-    return "Input Layer";
-  }
-
-  if (isSeedNode(node)) {
-    return formatSeedLayerLabel(node);
-  }
-
-  return node.layer || node.folderLabel || "";
-}
-
-function isActualInputLayerTableNode(node) {
-  if (!node || isDagBoundaryNode(node) || node.resourceType !== "model") {
-    return false;
-  }
-
-  const name = node.name || node.technical?.alias || "";
-  const schemaName = node.technical?.schemaName || "";
-
-  return schemaName === "input_layer" && name.startsWith("input_layer__");
-}
-
-function getInputLayerTableBaseName(node) {
-  return (node?.name || node?.technical?.alias || "").replace(/^input_layer__/, "");
-}
-
-function getInputLayerTypeLabel(node) {
-  const baseName = getInputLayerTableBaseName(node);
-
-  return payerInputLayerTables.has(baseName) ? "Payer" : "Provider";
-}
-
-function formatInputLayerTableDisplayName(node) {
-  return getInputLayerTableBaseName(node)
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-function formatSeedDisplayName(node) {
-  const rawName = node?.technical?.alias || node?.name || "";
-  const cleanName = rawName
-    .replace(/^_value_set_/, "")
-    .replace(/^[a-z0-9_]+__/, "");
-
-  return formatTitleFromIdentifier(cleanName || rawName);
-}
-
-function formatSeedLayerLabel(node) {
-  const schemaName = node?.technical?.schemaName || "";
-
-  if (schemaName === "terminology") {
-    return "Terminology";
-  }
-
-  if (schemaName === "value_sets") {
-    return "Value Sets";
-  }
-
-  if (schemaName === "provider_data") {
-    return "Provider Data";
-  }
-
-  if (schemaName === "synthetic_data") {
-    return "Synthetic Data";
-  }
-
-  return formatTitleFromIdentifier(schemaName || node?.layer || "Seed");
-}
-
-function formatTitleFromIdentifier(value) {
-  const cleanValue = String(value || "").replace(/^_+/, "");
-  const labelOverrides = {
-    act_site: "ACT Site",
-    icd_9_cm: "ICD-9-CM",
-    icd_9_pcs: "ICD-9-PCS",
-    icd_10_cm: "ICD-10-CM",
-    icd_10_pcs: "ICD-10-PCS",
-    icd_10_pcs_cms_ontology: "ICD-10-PCS CMS Ontology",
-    snomed_ct: "SNOMED CT"
-  };
-
-  if (labelOverrides[cleanValue]) {
-    return labelOverrides[cleanValue];
-  }
-
-  return cleanValue
-    .split("_")
-    .filter(Boolean)
-    .map((word) => {
-      const normalizedWord = word.toUpperCase();
-      const acronymWords = new Set(["ACT", "AHRQ", "ANSI", "APC", "APR", "ATC", "BETOS", "CCS", "CCSR", "CMS", "CVX", "DRG", "DXCCSR", "ED", "FIPS", "HCC", "HCPCS", "ICD", "LOINC", "MS", "NDC", "NITOS", "NPI", "NUBC", "POA", "PQI", "RBCS", "RXNORM", "SNOMED", "SSA", "SVI"]);
-
-      if (acronymWords.has(normalizedWord)) {
-        return normalizedWord;
-      }
-
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
-}
-
-function getDagBoundarySecondaryLabel(node) {
-  const categoryLabel = node?.dagBoundary?.categoryLabel || node?.layer || "";
-
-  return categoryLabel || "DAG";
-}
-
-function getDagBoundaryDisplay(node) {
-  return {
-    primaryLabel: node?.dagBoundary?.targetLabel || node?.name || "",
-    secondaryLabel: getDagBoundarySecondaryLabel(node)
-  };
 }
 
 function renderSystemOverviewScene(payload, sceneWidth, sceneHeight) {
@@ -888,7 +603,9 @@ function renderSystemOverviewScene(payload, sceneWidth, sceneHeight) {
       aria-hidden="true"
     >
       <defs>
-        ${renderSystemOverviewArrowheadMarker()}
+        <marker id="overview-arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3936"></path>
+        </marker>
       </defs>
       ${model.connectors.map(renderSystemOverviewConnectorPath).join("")}
     </svg>
@@ -953,43 +670,15 @@ function renderSystemOverviewConnectorPath(path) {
   `;
 }
 
-function renderSystemOverviewArrowheadMarker() {
-  const size = SYSTEM_OVERVIEW_ARROWHEAD_SIZE;
-  const mid = size / 2;
-
-  return `
-    <marker id="overview-arrowhead" markerWidth="${size}" markerHeight="${size}" refX="${SYSTEM_OVERVIEW_ARROWHEAD_REF_X}" refY="${mid}" orient="auto">
-      <path d="M 0 0 L ${size} ${mid} L 0 ${size} z" fill="#3a3936"></path>
-    </marker>
-  `;
-}
-
 function renderSystemOverviewStageTitle(stage) {
-  const escapedDescription = escapeHtml(SYSTEM_OVERVIEW_STAGE_DESCRIPTIONS[stage.key] || "");
-  const info = escapedDescription
-    ? `
-      <span class="system-overview-stage-info" aria-label="${escapeAttribute(SYSTEM_OVERVIEW_STAGE_DESCRIPTIONS[stage.key])}">
-        <span class="system-overview-stage-info-icon">i</span>
-        <span class="system-overview-stage-tooltip" role="tooltip">${escapedDescription}</span>
-      </span>
-    `
-    : "";
-  const title = stage.key === "claimsPreprocessing"
-    ? escapeHtml(stage.title)
+  if (stage.key === "claimsPreprocessing") {
+    return escapeHtml(stage.title)
       .split(" ")
       .map((word) => `<span>${word}</span>`)
-      .join("")
-    : escapeHtml(stage.title);
-  const titleClass = stage.key === "claimsPreprocessing"
-    ? "system-overview-stage-title-text is-stacked"
-    : "system-overview-stage-title-text";
+      .join("");
+  }
 
-  return `
-    <span class="system-overview-stage-title-inner">
-      <span class="${titleClass}">${title}</span>
-      ${info}
-    </span>
-  `;
+  return escapeHtml(stage.title);
 }
 
 function buildSystemOverviewVisualModel(nodes, { positions = state.positions } = {}) {
@@ -1102,27 +791,8 @@ function buildSystemOverviewConnectorPath(spec, stageByKey, entryById) {
   if (!start || !end) {
     return "";
   }
-
-  if (spec.route === "right-then-down") {
-    const routeX = start.x + 32;
-    const startBendY = start.y + 42;
-    const endBendY = end.y - 42;
-    return [
-      `M ${start.x} ${start.y}`,
-      `C ${routeX} ${start.y}, ${routeX} ${start.y}, ${routeX} ${startBendY}`,
-      `L ${routeX} ${endBendY}`,
-      `C ${routeX} ${end.y}, ${routeX + 44} ${end.y}, ${end.x} ${end.y}`
-    ].join(" ");
-  }
-
-  if (start.x === end.x) {
-    const offset = Math.min(88, Math.max(32, Math.round(Math.abs(end.y - start.y) * 0.45)));
-    const direction = end.y >= start.y ? 1 : -1;
-    return `M ${start.x} ${start.y} C ${start.x} ${start.y + offset * direction}, ${end.x} ${end.y - offset * direction}, ${end.x} ${end.y}`;
-  }
-
-  const dx = Math.abs(end.x - start.x);
-  const controlOffset = Math.min(118, Math.max(36, Math.round(dx * 0.42)));
+  const distance = Math.max(120, end.x - start.x);
+  const controlOffset = Math.max(96, Math.round(distance * 0.44));
 
   return `M ${start.x} ${start.y} C ${start.x + controlOffset} ${start.y}, ${end.x - controlOffset} ${end.y}, ${end.x} ${end.y}`;
 }
@@ -1139,19 +809,9 @@ function resolveSystemOverviewAnchor(anchor, stageByKey, entryById) {
       return null;
     }
 
-    const centerX = Math.round(entry.x + SYSTEM_OVERVIEW_ENTRY_WIDTH / 2);
-    const centerY = Math.round(entry.y + SYSTEM_OVERVIEW_ENTRY_HEIGHT / 2);
-
-    if (anchor.side === "top" || anchor.side === "bottom") {
-      return {
-        x: centerX,
-        y: anchor.side === "top" ? entry.y : entry.y + SYSTEM_OVERVIEW_ENTRY_HEIGHT
-      };
-    }
-
     return {
       x: anchor.side === "left" ? entry.x : entry.x + SYSTEM_OVERVIEW_ENTRY_WIDTH,
-      y: centerY
+      y: Math.round(entry.y + SYSTEM_OVERVIEW_ENTRY_HEIGHT / 2)
     };
   }
 
@@ -1162,21 +822,11 @@ function resolveSystemOverviewAnchor(anchor, stageByKey, entryById) {
   }
 
   const alignedEntry = anchor.alignEntryId ? entryById.get(anchor.alignEntryId) : null;
-  const stageCenterX = Math.round(stage.bounds.minX + stage.bounds.width / 2);
-  const stageCenterY = Math.round(stage.bounds.minY + stage.bounds.height / 2);
-  const alignedCenterX = alignedEntry ? Math.round(alignedEntry.x + SYSTEM_OVERVIEW_ENTRY_WIDTH / 2) : stageCenterX;
-  const alignedCenterY = alignedEntry ? Math.round(alignedEntry.y + SYSTEM_OVERVIEW_ENTRY_HEIGHT / 2) : stageCenterY;
-
-  if (anchor.side === "top" || anchor.side === "bottom") {
-    return {
-      x: alignedCenterX,
-      y: anchor.side === "top" ? stage.bounds.minY : stage.bounds.minY + stage.bounds.height
-    };
-  }
-
   return {
     x: anchor.side === "left" ? stage.bounds.minX : stage.bounds.minX + stage.bounds.width,
-    y: alignedCenterY
+    y: alignedEntry
+      ? Math.round(alignedEntry.y + SYSTEM_OVERVIEW_ENTRY_HEIGHT / 2)
+      : Math.round(stage.bounds.minY + stage.bounds.height / 2)
   };
 }
 
@@ -1249,7 +899,7 @@ function formatTargetLauncherLabel(target) {
   }
 
   if (target.key === SYSTEM_OVERVIEW_TARGET_KEY || target.categoryKey === "overview") {
-    return target.label || "Overview";
+    return target.label || "Tuva Overview";
   }
 
   const categoryLabel = target.categoryLabel || "";
@@ -1274,22 +924,6 @@ function renderHeaderActions() {
     `);
   }
 
-  if (state.dagDrillStack.length) {
-    const expanded = state.dagDrillStack[state.dagDrillStack.length - 1];
-    const expandedLabel = expanded?.label ? ` ${expanded.label}` : "";
-
-    actions.push(`
-      <button
-        class="dag-header-action"
-        id="collapse-dag-button"
-        type="button"
-        title="Collapse${escapeAttribute(expandedLabel)}"
-      >
-        Collapse
-      </button>
-    `);
-  }
-
   actions.push(renderLegend());
   actions.push('<button class="dag-header-action" id="clear-button" type="button">Reset</button>');
 
@@ -1300,11 +934,9 @@ function renderTargetPanel() {
   const featuredTarget = state.targets.find((target) => target.key === SYSTEM_OVERVIEW_TARGET_KEY) || null;
   const categories = [
     { label: "Input Layer", targets: getTargetsForCategory("Input Layer") },
-    { label: "Normalized Layer", targets: getTargetsForCategory("Normalized Layer") },
     { label: "Claims Preprocessing", targets: getTargetsForCategory("Claims Preprocessing") },
     { label: "Core", targets: getTargetsForCategory("Core") },
-    { label: "Data Marts", targets: getTargetsForCategory("Data Marts") },
-    { label: "Semantic Layer", targets: getTargetsForCategory("Semantic Layer") }
+    { label: "Data Marts", targets: getTargetsForCategory("Data Marts") }
   ]
     .filter((category) => category.targets.length)
     .map((category) => ({
@@ -1471,8 +1103,9 @@ function renderModal(node) {
       <div class="modal-card" id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <header class="modal-header">
           <div>
+            <div class="modal-kicker">${escapeHtml(getNodeHeaderSchema(node))}</div>
             <h2 id="modal-title">${escapeHtml(getNodeHeaderTable(node))}</h2>
-            ${renderNodeHeaderMetadata(node)}
+            <div class="modal-subtitle">${escapeHtml(getNodeHeaderPath(node))}</div>
           </div>
           <div class="modal-actions">
             ${
@@ -1695,59 +1328,12 @@ function renderModalSubtitle(node) {
   return `${node.materialized} • ${node.technical.packageName}`;
 }
 
-function getNodeHeaderLayer(node) {
-  if (isDagBoundaryNode(node)) {
-    return formatLayerTitle(node.layer || node.folderLabel || "");
-  }
-
-  return formatLayerTitle(node.layer || node.folderLabel || "");
-}
-
-function renderNodeHeaderMetadata(node) {
-  const rows = [
-    ["dag", getNodeHeaderDag(node)],
-    ["schema", getNodeHeaderSchema(node)],
-    ["model", getNodeHeaderPath(node)]
-  ].filter(([, value]) => Boolean(value));
-
-  if (!rows.length) {
-    return "";
-  }
-
-  return `
-    <dl class="modal-node-meta">
-      ${rows
-        .map(
-          ([label, value]) => `
-            <div class="modal-node-meta-row">
-              <dt>${escapeHtml(label)}</dt>
-              <dd>${escapeHtml(value)}</dd>
-            </div>
-          `
-        )
-        .join("")}
-    </dl>
-  `;
-}
-
-function getNodeHeaderDag(node) {
-  if (isDagBoundaryNode(node)) {
-    return formatNodeHeaderMetadataValue(node.dagBoundary?.targetCategoryLabel || node.layer || node.folderLabel || "");
-  }
-
-  return formatNodeHeaderMetadataValue(getNodeHeaderLayer(node));
-}
-
-function formatNodeHeaderMetadataValue(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
 function getNodeHeaderSchema(node) {
   if (isDagBoundaryNode(node)) {
-    return "";
+    return node.folderLabel || node.layer || "";
   }
 
-  return node.technical?.schemaName || "";
+  return node.technical?.schemaName || node.folderLabel || node.layer || "";
 }
 
 function getNodeHeaderTable(node) {
@@ -1755,20 +1341,22 @@ function getNodeHeaderTable(node) {
     return node.name || "";
   }
 
-  return node.technical?.alias || node.name || "";
+  const baseName = node.technical?.alias || node.name || "";
+  const segments = baseName.split("__").filter(Boolean);
+  return segments[segments.length - 1] || baseName;
 }
 
 function getNodeHeaderPath(node) {
   if (node?.paths?.sql) {
-    return formatHeaderPath(node.paths.sql, "models/");
+    return formatHeaderPath(node.paths.sql, "/models/");
   }
 
   if (node?.paths?.yaml) {
-    return formatHeaderPath(node.paths.yaml, "models/");
+    return formatHeaderPath(node.paths.yaml, "/models/");
   }
 
   if (node?.seedViewer?.csvPath) {
-    return formatHeaderPath(node.seedViewer.csvPath, "seeds/");
+    return formatHeaderPath(node.seedViewer.csvPath, "/seeds/");
   }
 
   return renderModalSubtitle(node);
@@ -1782,14 +1370,10 @@ function formatHeaderPath(filePath, marker) {
   const normalizedPath = String(filePath).replace(/\\/g, "/");
   const markerIndex = normalizedPath.lastIndexOf(marker);
   const relativePath = markerIndex >= 0
-    ? normalizedPath.slice(markerIndex)
+    ? normalizedPath.slice(markerIndex + marker.length)
     : normalizedPath.split("/").slice(-3).join("/");
 
-  return relativePath;
-}
-
-function formatLayerTitle(value) {
-  return formatTitleFromIdentifier(String(value || "").replace(/\s+/g, "_"));
+  return relativePath.replace(/\.[^.]+$/, "");
 }
 
 function getPreviewDraft(node, editor = getEditorState(node)) {
@@ -2264,7 +1848,6 @@ function renderLegend() {
         ${renderLegendItem("Transformation Model", "intermediate")}
         ${renderLegendItem("Output Table", "output")}
         ${renderLegendItem("Terminology / Value Set", "terminology")}
-        ${renderLegendItem("DAG", "dag")}
         </div>
       </div>
     </details>
@@ -2331,7 +1914,6 @@ function renderFatalError(error) {
 
 function bindHudEvents() {
   document.querySelector("#refresh-button")?.addEventListener("click", handleRefreshClick);
-  document.querySelector("#collapse-dag-button")?.addEventListener("click", handleCollapseDagClick);
   document.querySelector("#clear-button")?.addEventListener("click", handleClearClick);
   document.querySelector("#fit-button")?.addEventListener("click", handleFitClick);
   document.querySelector("#zoom-in-button")?.addEventListener("click", () => zoomCanvas(1.12));
@@ -2837,7 +2419,6 @@ async function changeTarget(nextTargetKey) {
     return;
   }
 
-  state.dagDrillStack = [];
   state.launcherOpen = false;
   state.openNodeId = null;
   updateTargetQuery(nextTargetKey);
@@ -2845,260 +2426,6 @@ async function changeTarget(nextTargetKey) {
     preserveSelection: false,
     targetKey: nextTargetKey
   });
-}
-
-async function drillIntoDagBoundary(node) {
-  const nextTargetKey = node?.dagBoundary?.targetKey || node?.paths?.targetKey || null;
-
-  if (!nextTargetKey || nextTargetKey === SYSTEM_OVERVIEW_TARGET_KEY || !state.payload) {
-    return;
-  }
-
-  if (!confirmDiscardEditorChanges()) {
-    return;
-  }
-
-  const body = await loadLineageBody(nextTargetKey);
-  const expandedPayload = body.payload || null;
-
-  if (!expandedPayload) {
-    return;
-  }
-
-  const snapshot = createInlineExpansionSnapshot();
-  const mergedPayload = createInlineExpandedPayload({
-    basePayload: state.payload,
-    boundaryNode: node,
-    expandedPayload
-  });
-
-  state.dagDrillStack.push({
-    targetKey: nextTargetKey,
-    label: node.dagBoundary?.targetLabel || node.name,
-    snapshot
-  });
-  state.launcherOpen = false;
-  state.activeNodeId = null;
-  state.openNodeId = null;
-  state.modalTabNodeId = null;
-  state.modalTab = null;
-  state.editor = createEmptyEditorState();
-  applyInlineExpandedPayload(mergedPayload);
-}
-
-async function handleCollapseDagClick() {
-  if (!state.dagDrillStack.length) {
-    return;
-  }
-
-  if (!confirmDiscardEditorChanges()) {
-    return;
-  }
-
-  const previous = state.dagDrillStack.pop();
-  restoreInlineExpansionSnapshot(previous?.snapshot);
-}
-
-function createInlineExpansionSnapshot() {
-  return {
-    payload: cloneJson(state.payload),
-    positions: cloneJson(state.positions),
-    sceneSize: cloneJson(state.sceneSize),
-    viewport: cloneJson(state.viewport),
-    layoutMeta: cloneJson(state.layoutMeta),
-    activeNodeId: state.activeNodeId,
-    openNodeId: state.openNodeId,
-    modalTabNodeId: state.modalTabNodeId,
-    modalTab: state.modalTab
-  };
-}
-
-function restoreInlineExpansionSnapshot(snapshot) {
-  if (!snapshot?.payload) {
-    render();
-    return;
-  }
-
-  state.payload = cloneJson(snapshot.payload);
-  state.positions = cloneJson(snapshot.positions || {});
-  state.sceneSize = cloneJson(snapshot.sceneSize || DEFAULT_SCENE_SIZE);
-  state.viewport = clampViewport(snapshot.viewport || DEFAULT_VIEWPORT);
-  state.layoutMeta = cloneJson(snapshot.layoutMeta);
-  state.activeNodeId = snapshot.activeNodeId || null;
-  state.openNodeId = snapshot.openNodeId || null;
-  state.modalTabNodeId = snapshot.modalTabNodeId || null;
-  state.modalTab = snapshot.modalTab || null;
-  state.launcherOpen = false;
-  state.editor = createEmptyEditorState();
-  state.needsInitialFit = false;
-  render();
-}
-
-function createInlineExpandedPayload({ basePayload, boundaryNode, expandedPayload }) {
-  const boundaryId = boundaryNode.id;
-  const representativeNodeId = resolveExpandedRepresentativeNodeId(boundaryNode, expandedPayload);
-  const representativeNode = expandedPayload.nodes.find((node) => node.id === representativeNodeId);
-
-  if (!representativeNode) {
-    throw new Error(`Cannot expand ${boundaryNode.name}: no representative output node was found.`);
-  }
-
-  const depthOffset = (boundaryNode.depth || 0) - (representativeNode.depth || 0);
-  const baseNodes = basePayload.nodes.filter((node) => node.id !== boundaryId).map((node) => ({ ...node }));
-  const nodeIds = new Set(baseNodes.map((node) => node.id));
-  const expandedNodes = expandedPayload.nodes
-    .filter((node) => node.id !== boundaryId)
-    .map((node) => ({
-      ...node,
-      depth: (node.depth || 0) + depthOffset,
-      expandedFromDag: boundaryNode.dagBoundary?.targetKey || boundaryNode.paths?.targetKey || null
-    }))
-    .filter((node) => {
-      if (nodeIds.has(node.id)) {
-        return false;
-      }
-
-      nodeIds.add(node.id);
-      return true;
-    });
-  const nextNodes = [...baseNodes, ...expandedNodes];
-  const nextNodeIds = new Set(nextNodes.map((node) => node.id));
-  const nextEdges = [];
-  const edgeKeys = new Set();
-  const addEdge = (edge) => {
-    if (!edge?.source || !edge?.target || edge.source === edge.target) {
-      return;
-    }
-
-    if (!nextNodeIds.has(edge.source) || !nextNodeIds.has(edge.target)) {
-      return;
-    }
-
-    const edgeKey = createEdgeKey(edge.source, edge.target);
-    if (edgeKeys.has(edgeKey)) {
-      return;
-    }
-
-    edgeKeys.add(edgeKey);
-    nextEdges.push({ ...edge });
-  };
-  const addExpandedActualEdges = (edge) => {
-    let added = false;
-
-    for (const actualEdge of edge.actualEdges || []) {
-      if (!nextNodeIds.has(actualEdge.source) || !nextNodeIds.has(actualEdge.target)) {
-        continue;
-      }
-
-      addEdge({
-        ...edge,
-        source: actualEdge.source,
-        target: actualEdge.target,
-        actualEdges: [actualEdge]
-      });
-      added = true;
-    }
-
-    return added;
-  };
-
-  basePayload.edges.forEach((edge) => {
-    const sourceIsBoundary = edge.source === boundaryId;
-    const targetIsBoundary = edge.target === boundaryId;
-
-    if (sourceIsBoundary && targetIsBoundary) {
-      addExpandedActualEdges(edge);
-      return;
-    }
-
-    if (sourceIsBoundary) {
-      if (addExpandedActualEdges(edge)) {
-        return;
-      }
-
-      addEdge({ ...edge, source: representativeNodeId });
-      return;
-    }
-
-    if (targetIsBoundary) {
-      addExpandedActualEdges(edge);
-      return;
-    }
-
-    addEdge(edge);
-  });
-
-  expandedPayload.edges.forEach(addEdge);
-
-  return {
-    ...basePayload,
-    id: `${basePayload.id || basePayload.target?.key || "dag"}+${boundaryNode.dagBoundary?.targetKey || boundaryNode.name}`,
-    summary: {
-      ...(basePayload.summary || {}),
-      expandedDagLabels: [
-        ...((basePayload.summary || {}).expandedDagLabels || []),
-        boundaryNode.dagBoundary?.targetLabel || boundaryNode.name
-      ]
-    },
-    nodes: nextNodes,
-    edges: nextEdges
-  };
-}
-
-function resolveExpandedRepresentativeNodeId(boundaryNode, expandedPayload) {
-  const explicitId = boundaryNode.dagBoundary?.representativeNodeId || expandedPayload.target?.defaultSelectedNodeId;
-
-  if (explicitId && expandedPayload.nodes.some((node) => node.id === explicitId)) {
-    return explicitId;
-  }
-
-  const outputModelNames = new Set(boundaryNode.dagBoundary?.outputModels || []);
-  const outputNode = expandedPayload.nodes.find((node) => outputModelNames.has(node.name));
-
-  if (outputNode) {
-    return outputNode.id;
-  }
-
-  const sinkNodeIds = new Set(expandedPayload.nodes.map((node) => node.id));
-  expandedPayload.edges.forEach((edge) => {
-    sinkNodeIds.delete(edge.source);
-  });
-
-  const modelSink = expandedPayload.nodes.find((node) => sinkNodeIds.has(node.id) && node.resourceType === "model");
-  return modelSink?.id || expandedPayload.nodes[expandedPayload.nodes.length - 1]?.id || null;
-}
-
-function applyInlineExpandedPayload(payload) {
-  state.payload = payload;
-  state.openNodeId = chooseOpenNodeId({
-    payload: state.payload,
-    preferredNodeId: null
-  });
-  syncEditorStateWithOpenNode();
-
-  const layoutPlan = deriveLayoutPlan(state.payload.nodes, state.payload.edges);
-  state.sceneSize = layoutPlan.sceneSize;
-  state.positions = buildNodePositions(state.payload.nodes, {
-    currentPositions: null,
-    storedPositions: null,
-    defaultPositions: layoutPlan.defaultPositions,
-    sceneSize: state.sceneSize
-  });
-  state.layoutMeta = createLayoutMeta(layoutPlan, {
-    manualAdjusted: false,
-    viewportAdjusted: false
-  });
-  state.viewport = { ...DEFAULT_VIEWPORT };
-  state.needsInitialFit = true;
-  render();
-}
-
-function cloneJson(value) {
-  if (value == null) {
-    return value;
-  }
-
-  return JSON.parse(JSON.stringify(value));
 }
 
 async function handleTargetItemClick(event) {
@@ -3112,7 +2439,6 @@ async function handleClearClick() {
   }
 
   clearStoredLayoutState(SYSTEM_OVERVIEW_TARGET_KEY);
-  state.dagDrillStack = [];
   state.launcherOpen = false;
   state.activeNodeId = null;
   state.openNodeId = null;
@@ -3246,15 +2572,8 @@ function handleNodePointerDown(event) {
     moved: false
   };
 
+  event.currentTarget.classList.add("is-dragging");
   attachDragListeners();
-}
-
-function setNodeDraggingClass(nodeId, isDragging) {
-  document.querySelectorAll(".dag-node").forEach((element) => {
-    if (element.dataset.nodeId === nodeId) {
-      element.classList.toggle("is-dragging", isDragging);
-    }
-  });
 }
 
 function attachDragListeners() {
@@ -3280,13 +2599,7 @@ function handlePointerMove(event) {
   const dy = event.clientY - state.drag.startClientY;
 
   if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-    if (!state.drag.moved) {
-      state.drag.moved = true;
-
-      if (state.drag.type === "node") {
-        setNodeDraggingClass(state.drag.nodeId, true);
-      }
-    }
+    state.drag.moved = true;
   }
 
   if (state.drag.type === "pan") {
@@ -3369,11 +2682,6 @@ function handlePointerUp(event) {
 
     if (elapsedMs > NODE_HOLD_THRESHOLD_MS) {
       syncScene();
-      return;
-    }
-
-    if (isDagBoundaryNode(draggedNode)) {
-      void drillIntoDagBoundary(draggedNode);
       return;
     }
 
@@ -3657,7 +2965,9 @@ function syncSystemOverviewScene() {
   if (connectorsLayer) {
     connectorsLayer.innerHTML = `
       <defs>
-        ${renderSystemOverviewArrowheadMarker()}
+        <marker id="overview-arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3936"></path>
+        </marker>
       </defs>
       ${model.connectors.map(renderSystemOverviewConnectorPath).join("")}
     `;
@@ -3767,7 +3077,6 @@ function getCurrentTarget() {
 function getTargetsForCategory(categoryLabel) {
   return state.targets
     .filter((target) => (target.categoryLabel || "Other") === categoryLabel)
-    .filter((target) => !DAG_LAUNCHER_HIDDEN_TARGET_KEYS.has(target.key))
     .slice()
     .sort((left, right) => left.label.localeCompare(right.label));
 }
@@ -3784,18 +3093,14 @@ function drawEdges() {
   }
 
   const focus = getLineageFocus();
-  const nodeById = createNodeByIdMap();
-  const visibleEdges = getVisibleGraphEdges(nodeById);
-  const arrowheadSize = SYSTEM_OVERVIEW_ARROWHEAD_SIZE;
-  const arrowheadMid = arrowheadSize / 2;
 
   edgesLayer.innerHTML = `
     <defs>
-      <marker id="arrowhead" markerWidth="${arrowheadSize}" markerHeight="${arrowheadSize}" refX="${SYSTEM_OVERVIEW_ARROWHEAD_REF_X}" refY="${arrowheadMid}" orient="auto">
-        <path d="M 0 0 L ${arrowheadSize} ${arrowheadMid} L 0 ${arrowheadSize} z" fill="#2d2d2d"></path>
+      <marker id="arrowhead" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+        <path d="M 0 0 L 9 4.5 L 0 9 z" fill="#2d2d2d"></path>
       </marker>
     </defs>
-    ${visibleEdges
+    ${state.payload.edges
       .map((edge) => {
         const path = buildEdgePath(edge);
 
@@ -3810,85 +3115,6 @@ function drawEdges() {
       })
       .join("")}
   `;
-}
-
-function createNodeByIdMap(nodes = state.payload?.nodes || []) {
-  return new Map(nodes.map((node) => [node.id, node]));
-}
-
-function shouldRenderEdge(edge, nodeById = createNodeByIdMap()) {
-  const source = nodeById.get(edge.source);
-  const target = nodeById.get(edge.target);
-
-  if (!source || !target) {
-    return false;
-  }
-
-  if ((isDagBoundaryNode(source) || isDagBoundaryNode(target)) && (isSeedNode(source) || isSeedNode(target))) {
-    return false;
-  }
-
-  return true;
-}
-
-function getVisibleGraphEdges(nodeById = createNodeByIdMap(), edges = state.payload?.edges || []) {
-  return edges.filter((edge) => shouldRenderEdge(edge, nodeById));
-}
-
-function reduceTransitiveEdges(edges, nodeById) {
-  if (!edges.length) {
-    return [];
-  }
-
-  const adjacency = new Map();
-
-  edges.forEach((edge, index) => {
-    if (!adjacency.has(edge.source)) {
-      adjacency.set(edge.source, []);
-    }
-
-    adjacency.get(edge.source).push({
-      target: edge.target,
-      index
-    });
-  });
-
-  return edges.filter((edge, edgeIndex) => {
-    const sourceNode = nodeById.get(edge.source);
-    const targetNode = nodeById.get(edge.target);
-
-    if (!sourceNode || !targetNode || isSeedNode(sourceNode) || isSeedNode(targetNode)) {
-      return true;
-    }
-
-    return !hasAlternatePath(edge.source, edge.target, edgeIndex, adjacency);
-  });
-}
-
-function hasAlternatePath(sourceId, targetId, excludedEdgeIndex, adjacency) {
-  const queue = [sourceId];
-  const visited = new Set([sourceId]);
-
-  while (queue.length) {
-    const currentId = queue.shift();
-
-    for (const edge of adjacency.get(currentId) || []) {
-      if (edge.index === excludedEdgeIndex) {
-        continue;
-      }
-
-      if (edge.target === targetId) {
-        return true;
-      }
-
-      if (!visited.has(edge.target)) {
-        visited.add(edge.target);
-        queue.push(edge.target);
-      }
-    }
-  }
-
-  return false;
 }
 
 function buildEdgePath(edge) {
@@ -3932,10 +3158,8 @@ function getLineageFocus() {
   const nodeIds = new Set([state.activeNodeId]);
   const downstream = new Map();
   const upstream = new Map();
-  const nodeById = createNodeByIdMap();
-  const visibleEdges = getVisibleGraphEdges(nodeById);
 
-  visibleEdges.forEach((edge) => {
+  state.payload.edges.forEach((edge) => {
     if (!downstream.has(edge.source)) {
       downstream.set(edge.source, []);
     }
@@ -3952,7 +3176,7 @@ function getLineageFocus() {
   walkConnectedNodes(state.activeNodeId, upstream, nodeIds);
 
   const edgeKeys = new Set(
-    visibleEdges
+    state.payload.edges
       .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
       .map((edge) => createEdgeKey(edge.source, edge.target))
   );
@@ -4275,15 +3499,12 @@ function deriveLayoutPlan(nodes, edges) {
     return deriveSystemOverviewLayoutPlan(nodes, edges);
   }
 
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const layoutEdges = edges.filter((edge) => nodeById.has(edge.source) && nodeById.has(edge.target));
-  const layoutNodes = applyLayoutDepths(nodes, layoutEdges);
-  const groupedNodes = orderModelGroups(groupNodesByDepth(layoutNodes), layoutEdges);
-  const seedNodes = orderSeedNodes(layoutNodes.filter((node) => isSeedNode(node)), layoutEdges, groupedNodes);
+  const groupedNodes = orderModelGroups(groupNodesByDepth(nodes), edges);
+  const seedNodes = orderSeedNodes(nodes.filter((node) => isSeedNode(node)), edges, groupedNodes);
   const sceneSize = deriveSceneSize({
     groupedNodes,
     seedNodes,
-    totalNodeCount: layoutNodes.length
+    totalNodeCount: nodes.length
   });
   const defaultPositions = deriveDefaultPositions({
     groupedNodes,
@@ -4296,118 +3517,8 @@ function deriveLayoutPlan(nodes, edges) {
     seedNodes,
     sceneSize,
     defaultPositions,
-    signature: createLayoutSignature(layoutNodes, layoutEdges)
+    signature: createLayoutSignature(nodes, edges)
   };
-}
-
-function applyLayoutDepths(nodes, edges) {
-  const depthById = computeLayoutDepths(nodes, edges);
-
-  return nodes.map((node) => ({
-    ...node,
-    depth: depthById.get(node.id) ?? node.depth ?? 0
-  }));
-}
-
-function computeLayoutDepths(nodes, edges) {
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const parentsByTarget = new Map();
-  const childrenBySource = new Map();
-  const memo = new Map();
-  const visiting = new Set();
-
-  for (const edge of edges) {
-    const sourceNode = nodeById.get(edge.source);
-    const targetNode = nodeById.get(edge.target);
-
-    if (!sourceNode || !targetNode || isSeedNode(sourceNode) || isSeedNode(targetNode)) {
-      continue;
-    }
-
-    if (!parentsByTarget.has(edge.target)) {
-      parentsByTarget.set(edge.target, []);
-    }
-
-    parentsByTarget.get(edge.target).push(edge.source);
-
-    if (!childrenBySource.has(edge.source)) {
-      childrenBySource.set(edge.source, []);
-    }
-
-    childrenBySource.get(edge.source).push(edge.target);
-  }
-
-  function compute(nodeId) {
-    if (memo.has(nodeId)) {
-      return memo.get(nodeId);
-    }
-
-    const node = nodeById.get(nodeId);
-
-    if (!node || isSeedNode(node) || isLayoutInputNode(node)) {
-      memo.set(nodeId, 0);
-      return 0;
-    }
-
-    if (visiting.has(nodeId)) {
-      return node.depth || 0;
-    }
-
-    visiting.add(nodeId);
-    const parents = (parentsByTarget.get(nodeId) || [])
-      .filter((parentId) => parentId !== nodeId)
-      .filter((parentId) => nodeById.has(parentId));
-    const depth = parents.length ? Math.max(...parents.map((parentId) => compute(parentId))) + 1 : 0;
-    visiting.delete(nodeId);
-    memo.set(nodeId, depth);
-    return depth;
-  }
-
-  nodes.forEach((node) => {
-    compute(node.id);
-  });
-
-  keepNonInputRootsAfterInputLayer(nodes, memo, parentsByTarget, childrenBySource);
-
-  return memo;
-}
-
-function isLayoutInputNode(node) {
-  return node?.baseNodeType === "input";
-}
-
-function keepNonInputRootsAfterInputLayer(nodes, depthById, parentsByTarget, childrenBySource) {
-  const hasInputLayerNode = nodes.some((node) => isLayoutInputNode(node));
-
-  if (!hasInputLayerNode) {
-    return;
-  }
-
-  nodes.forEach((node) => {
-    if (!node || isSeedNode(node) || isLayoutInputNode(node)) {
-      return;
-    }
-
-    const parents = parentsByTarget.get(node.id) || [];
-
-    if (parents.length) {
-      return;
-    }
-
-    const childDepths = (childrenBySource.get(node.id) || [])
-      .map((childId) => depthById.get(childId))
-      .filter((depth) => Number.isFinite(depth));
-
-    if (!childDepths.length) {
-      return;
-    }
-
-    const inferredDepth = Math.max(1, Math.min(...childDepths) - 1);
-
-    if (inferredDepth > (depthById.get(node.id) || 0)) {
-      depthById.set(node.id, inferredDepth);
-    }
-  });
 }
 
 function deriveSystemOverviewLayoutPlan(nodes, edges) {
@@ -4875,8 +3986,8 @@ function isViewportLike(value) {
 function deriveFitSettings({ payload, sceneSize, width, height, safeRect }) {
   if (payload?.target?.key === SYSTEM_OVERVIEW_TARGET_KEY) {
     return {
-      scaleCap: 0.92,
-      padding: 14
+      scaleCap: 0.68,
+      padding: 18
     };
   }
 
@@ -5012,10 +4123,6 @@ function resolvePersistedLayoutMeta({
 
 function persistLayoutState(options = {}) {
   if (!state.payload) {
-    return;
-  }
-
-  if (state.dagDrillStack.length) {
     return;
   }
 

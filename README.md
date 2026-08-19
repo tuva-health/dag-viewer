@@ -4,23 +4,25 @@ Static DAG viewer for the Tuva dbt package.
 
 The production site should be configured in Netlify as a separate site with:
 
+- Repository: `tuva-health/dag-viewer`
+- Base directory: repository root
 - Build command: `npm ci && npm run build`
 - Publish directory: `dist`
 - Custom domain: `dagviewer.thetuvaproject.com`
-- Branch: `main`
+- Branch: `agent/dag-core-cutover-bridge`
 
-Do not configure an ignore rule that skips builds when Tuva Core changes. The
-viewer intentionally rebuilds from Tuva Core model YAML, seed YAML, SQL, and CSV
-metadata.
+Keep Netlify auto-publishing locked to the reviewed deploy. Rebuild this branch
+only when intentionally validating the same immutable compatibility snapshot.
 
-By default the build uses sibling `../tuva-core` when it exists. Otherwise it
-clones `tuva-health/tuva-core` at `main`, builds a lightweight
+This deployment-only compatibility branch clones `tuva-health/tuva-core` at
+`9b59760465c757e94a41b4ac2cede7c40c2e9086`, builds a lightweight
 dbt manifest from the model YAML, seed YAML, SQL, and CSV files, then exports
-static lineage JSON for every DAG target. When Netlify rebuilds the site after
-changes land on `main`, the hosted viewer refreshes from the latest main-branch
-YAML and SQL.
+static lineage JSON for every DAG target. The immutable source pin preserves the
+current production DAG while Tuva Core's `main` branch is replaced by the 1.0
+candidate. This branch must not be merged into the standalone repository's
+`main` branch.
 
-For local development against the current checkout:
+For local development against a sibling Tuva Core checkout:
 
 ```bash
 npm install
@@ -42,10 +44,11 @@ dependency changes. The committed `public/index.html` remains hard-coded to
 static mode, and the Netlify build publishes only `dist`, so edit mode is not
 available on the public site.
 
-To force a different source checkout or Git ref:
+To build against a local source checkout:
 
 ```bash
-TUVA_CORE_PATH=/path/to/tuva-core npm run build
 TUVA_DAG_SOURCE_ROOT=/path/to/tuva-core npm run build
-TUVA_DAG_GITHUB_REF=main npm run build
 ```
+
+The production-style build intentionally rejects repository or ref overrides so
+the hosted compatibility artifact cannot drift from the reviewed snapshot.

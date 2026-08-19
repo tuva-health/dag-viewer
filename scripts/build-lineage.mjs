@@ -9,9 +9,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const dagRoot = path.resolve(scriptDir, "..");
 const repoRoot = process.env.DAG_REPO_ROOT
   ? path.resolve(process.env.DAG_REPO_ROOT)
-  : process.env.TUVA_CORE_PATH
-    ? path.resolve(process.env.TUVA_CORE_PATH)
-    : path.resolve(dagRoot, "..", "tuva-core");
+  : path.resolve(dagRoot, "..");
 const cacheRoot = process.env.DAG_CACHE_DIR
   ? path.resolve(process.env.DAG_CACHE_DIR)
   : path.join(dagRoot, "data");
@@ -22,27 +20,17 @@ const manifestPath = process.env.DAG_MANIFEST_PATH
 export const DEFAULT_TARGET_KEY = "appointment";
 export const SYSTEM_OVERVIEW_TARGET_KEY = "system_overview";
 
+const compatibilityCoreRef = "9b59760465c757e94a41b4ac2cede7c40c2e9086";
+const compatibilityAssetVersion = "0.16.0";
+const legacyTuvaMainUrl = "https://github.com/tuva-health/tuva/blob/main/";
+const compatibilityCoreBlobUrl = `https://github.com/tuva-health/tuva-core/blob/${compatibilityCoreRef}/`;
+
 const packageRoots = {
   integration_tests: path.join(repoRoot, "integration_tests"),
   the_tuva_project: repoRoot
 };
 
 const fixedClaimsTargets = [
-  {
-    key: "provider_attribution",
-    label: "Provider Attribution",
-    kind: "claims_preprocessing",
-    categoryKey: "claims_preprocessing",
-    categoryLabel: "Claims Preprocessing",
-    title: "Provider Attribution DAG",
-    subtitle:
-      "Claims preprocessing models that attribute members to providers and prepare attribution outputs for downstream member-month logic.",
-    folderLabel: "claims_preprocessing/provider_attribution",
-    recurseWhenCollapsed: true,
-    collapsedNodeType: "intermediate",
-    matchesPath: (modelPath) => modelPath.startsWith("models/claims_preprocessing/provider_attribution/"),
-    selectRootNodeIds: (nodes) => nodes.filter((node) => node.original_file_path.includes("/final/")).map((node) => node.unique_id)
-  },
   {
     key: "service_categories",
     label: "Service Categories",
@@ -80,33 +68,18 @@ const fixedClaimsTargets = [
     }
   },
   {
-    key: "claims_member_month",
-    label: "Member Month",
-    kind: "claims_preprocessing",
-    categoryKey: "claims_preprocessing",
-    categoryLabel: "Claims Preprocessing",
-    title: "Member Month DAG",
-    subtitle:
-      "Claims preprocessing models that build member-month grain enrollment context for claims enrollment and core outputs.",
-    folderLabel: "claims_preprocessing/member_month",
-    recurseWhenCollapsed: true,
-    collapsedNodeType: "intermediate",
-    matchesPath: (modelPath) => modelPath.startsWith("models/claims_preprocessing/member_month/"),
-    selectRootNodeIds: (nodes) => nodes.filter((node) => node.name === "member_month__member_month").map((node) => node.unique_id)
-  },
-  {
     key: "claims_enrollment",
-    label: "Claims Enrollment Flags",
+    label: "Claims Enrollment",
     kind: "claims_preprocessing",
     categoryKey: "claims_preprocessing",
     categoryLabel: "Claims Preprocessing",
     title: "Claims Enrollment DAG",
     subtitle:
       "Claims preprocessing models that use member-month context to create enrollment flags for medical and pharmacy claims before core outputs.",
-    folderLabel: "claims_preprocessing/claims_enrollment_flags",
+    folderLabel: "claims_preprocessing/claims_enrollment",
     recurseWhenCollapsed: true,
     collapsedNodeType: "intermediate",
-    matchesPath: (modelPath) => modelPath.startsWith("models/claims_preprocessing/claims_enrollment_flags/"),
+    matchesPath: (modelPath) => modelPath.startsWith("models/claims_preprocessing/claims_enrollment/"),
     selectRootNodeIds: (nodes) => {
       const preferredNames = new Set([
         "claims_enrollment__flag_claims_with_enrollment",
@@ -120,47 +93,24 @@ const fixedClaimsTargets = [
 
 const OVERVIEW_CATEGORY_ORDER = {
   input_layer: 0,
-  normalized_layer: 1,
-  claims_preprocessing: 2,
-  core: 3,
-  data_marts: 4,
-  semantic_layer: 5
+  claims_preprocessing: 1,
+  core: 2,
+  data_marts: 3
 };
-
-const normalizedTargetKeyOverrides = {
-  provider_attribution: "normalized_attribution"
-};
-
-const normalizedTargetBaseNames = new Set([
-  "appointment",
-  "condition",
-  "eligibility",
-  "encounter",
-  "immunization",
-  "lab_result",
-  "location",
-  "medical_claim",
-  "medication",
-  "observation",
-  "patient",
-  "pharmacy_claim",
-  "practitioner",
-  "procedure",
-  "provider_attribution"
-]);
 
 const labelOverrides = {
   appointment: "Appointment",
-  ahrq_quality_indicators: "AHRQ Quality Indicators",
+  ahrq_measures: "AHRQ Measures",
   ccsr: "CCSR",
-  claims_enrollment: "Claims Enrollment Flags",
+  claims_enrollment: "Claims Enrollment",
   cms_hcc: "CMS HCC",
   ed_classification: "ED Classification",
+  financial_pmpm: "Financial PMPM",
   fhir_preprocessing: "FHIR Preprocessing",
   hcc_recapture: "HCC Recapture",
   hcc_suspecting: "HCC Suspecting",
   medical_claim: "Medical Claim",
-  member_month: "Member Month",
+  member_months: "Member Months",
   person_id_crosswalk: "Person ID Crosswalk",
   provider_attribution: "Provider Attribution",
   quality_measures: "Quality Measures",
@@ -754,35 +704,20 @@ function resolveOverviewTargetForManifestNode(manifestNode, catalog) {
     return catalog.targetByKey.get(`input_layer__${baseName}`) || null;
   }
 
-  if (modelPath.startsWith("models/normalized_layer/final/")) {
-    const targetKey = getNormalizedTargetKeyFromModelName(manifestNode.name);
-    return targetKey ? catalog.targetByKey.get(targetKey) || null : null;
-  }
-
   if (modelPath.startsWith("models/claims_preprocessing/service_category/")) {
     return catalog.targetByKey.get("service_categories") || null;
-  }
-
-  if (modelPath.startsWith("models/claims_preprocessing/provider_attribution/")) {
-    return catalog.targetByKey.get("provider_attribution") || null;
-  }
-
-  if (modelPath.startsWith("models/claims_preprocessing/member_month/")) {
-    return catalog.targetByKey.get("member_month") || null;
   }
 
   if (modelPath.startsWith("models/claims_preprocessing/encounters/")) {
     return catalog.targetByKey.get("encounters") || null;
   }
 
-  if (modelPath.startsWith("models/claims_preprocessing/claims_enrollment_flags/")) {
+  if (modelPath.startsWith("models/claims_preprocessing/claims_enrollment/")) {
     return catalog.targetByKey.get("claims_enrollment") || null;
   }
 
   if (modelPath.startsWith("models/core/final/")) {
-    const baseName = manifestNode.name.replace(/^core__/, "");
-    const targetKey = baseName;
-    return catalog.targetByKey.get(targetKey) || null;
+    return catalog.targetByKey.get(manifestNode.name.replace(/^core__/, "")) || null;
   }
 
   if (modelPath.startsWith("models/data_marts/")) {
@@ -857,19 +792,6 @@ function discoverTargetCatalog(manifest) {
     targets.push(target);
   }
 
-  const normalizedTargets = models
-    .filter((node) => normalizePath(node.original_file_path).startsWith("models/normalized_layer/final/"))
-    .map((node) => buildNormalizedTarget(node, models))
-    .filter(Boolean)
-    .sort((left, right) => left.label.localeCompare(right.label));
-
-  for (const target of normalizedTargets) {
-    targets.push(target);
-    for (const nodeId of target.memberNodeIds) {
-      boundaryByNodeId.set(nodeId, target);
-    }
-  }
-
   const coreTargets = models
     .filter((node) => normalizePath(node.original_file_path).startsWith("models/core/final/"))
     .sort((left, right) => left.name.localeCompare(right.name))
@@ -924,7 +846,7 @@ function discoverTargetCatalog(manifest) {
   const dataMartGroups = groupDataMartNodes(models);
 
   for (const [groupName, groupNodes] of dataMartGroups.entries()) {
-    if (groupName === "metadata") {
+    if (groupName === "metadata" || groupName === "clinical_concept_library") {
       continue;
     }
 
@@ -979,11 +901,10 @@ function discoverTargetCatalog(manifest) {
 
 function buildCoreTarget(node, models = []) {
   const baseName = node.name.replace(/^core__/, "");
-  const targetKey = baseName;
-  const label = formatLabel(targetKey);
+  const label = formatLabel(baseName);
   const memberNodeIds = [node.unique_id];
 
-  if (baseName === "member_month") {
+  if (baseName === "member_months") {
     const memberMonthModelNames = new Set([
       "core__int_member_months",
       "core__stg_claims_member_months",
@@ -998,7 +919,7 @@ function buildCoreTarget(node, models = []) {
   }
 
   return {
-    key: targetKey,
+    key: baseName,
     label,
     kind: "core_model",
     categoryKey: "core",
@@ -1006,7 +927,7 @@ function buildCoreTarget(node, models = []) {
     title: `${label} DAG`,
     subtitle: `Trace ${node.name} from its upstream sources and transformations into the final core model.`,
     folderLabel: "core/final",
-    collapsedDisplayName: baseName === "member_month" ? "member_month" : undefined,
+    collapsedDisplayName: baseName === "member_months" ? "member_months" : undefined,
     recurseWhenCollapsed: false,
     collapsedNodeType: "output",
     rootNodeIds: [node.unique_id],
@@ -1014,67 +935,6 @@ function buildCoreTarget(node, models = []) {
     memberNodeIds: uniqueStrings(memberNodeIds),
     defaultSelectedNodeId: node.unique_id
   };
-}
-
-function buildNormalizedTarget(node, models = []) {
-  const baseName = node.name.replace(/^normalized__/, "");
-
-  if (!normalizedTargetBaseNames.has(baseName)) {
-    return null;
-  }
-
-  const targetKey = getNormalizedTargetKeyFromBaseName(baseName);
-  const label = formatLabel(baseName);
-  const memberNodeIds = [node.unique_id];
-
-  if (baseName === "medical_claim") {
-    const medicalClaimDetailNames = new Set([
-      "normalized__medical_claim_diagnoses",
-      "normalized__medical_claim_procedures"
-    ]);
-
-    for (const model of models) {
-      if (medicalClaimDetailNames.has(model.name)) {
-        memberNodeIds.push(model.unique_id);
-      }
-    }
-  }
-
-  return {
-    key: targetKey,
-    label,
-    kind: "normalized_model",
-    categoryKey: "normalized_layer",
-    categoryLabel: "Normalized Layer",
-    title: `${label} Normalized Layer DAG`,
-    subtitle: `Trace ${node.name} through Tuva normalization before downstream claims preprocessing and core outputs.`,
-    folderLabel: "normalized_layer/final",
-    collapsedDisplayName: node.name,
-    recurseWhenCollapsed: false,
-    collapsedNodeType: "intermediate",
-    rootNodeIds: [node.unique_id],
-    rootNodeLabels: [node.name],
-    memberNodeIds: uniqueStrings(memberNodeIds),
-    defaultSelectedNodeId: node.unique_id
-	  };
-	}
-
-function getNormalizedTargetKeyFromModelName(modelName) {
-  const baseName = modelName.replace(/^normalized__/, "");
-
-  if (!normalizedTargetBaseNames.has(baseName)) {
-    if (baseName === "medical_claim_diagnoses" || baseName === "medical_claim_procedures") {
-      return "normalized_medical_claim";
-    }
-
-    return null;
-  }
-
-  return getNormalizedTargetKeyFromBaseName(baseName);
-}
-
-function getNormalizedTargetKeyFromBaseName(baseName) {
-  return normalizedTargetKeyOverrides[baseName] || `normalized_${baseName}`;
 }
 
 function buildInputLayerTarget(node) {
@@ -1334,7 +1194,7 @@ function mapManifestNodeToDisplayDescriptor({ manifestNode, target, catalog }) {
 }
 
 function shouldExpandBoundaryTarget(boundaryTarget, target) {
-  return boundaryTarget?.key === "claims_member_month" && target?.key === "claims_enrollment";
+  return boundaryTarget?.key === "member_months" && target?.key === "claims_enrollment";
 }
 
 function shouldStopRecursingAtVisibleNode({ manifestNode, target }) {
@@ -1487,11 +1347,13 @@ function buildColumns({ manifestNode, yamlEntry, priorNodes }) {
       manifestColumn.meta?.data_type,
       inheritedColumn.dataType
     );
-    const terminology = firstNonEmpty(
-      yamlColumn.terminology,
-      manifestColumn.config?.meta?.terminology,
-      manifestColumn.meta?.terminology,
-      inheritedColumn.terminology
+    const terminology = rewriteCompatibilityUrl(
+      firstNonEmpty(
+        yamlColumn.terminology,
+        manifestColumn.config?.meta?.terminology,
+        manifestColumn.meta?.terminology,
+        inheritedColumn.terminology
+      )
     );
     const terminologyNote = firstNonEmpty(
       yamlColumn.terminologyNote,
@@ -1506,6 +1368,10 @@ function buildColumns({ manifestNode, yamlEntry, priorNodes }) {
         manifestColumn.meta?.is_primary_key ||
         (!hasExplicitColumnDefinition && inheritedColumn.isPrimaryKey)
     );
+    const requiredForDataMarts = uniqueStrings([
+      ...(yamlColumn.requiredForDataMarts || []),
+      ...(inheritedColumn.requiredForDataMarts || [])
+    ]);
     const inheritedFrom =
       !cleanText(yamlColumn.description) && !cleanText(manifestColumn.description) && inheritedColumn.inheritedFrom
         ? inheritedColumn.inheritedFrom
@@ -1518,6 +1384,7 @@ function buildColumns({ manifestNode, yamlEntry, priorNodes }) {
       terminology,
       terminologyNote,
       isPrimaryKey,
+      requiredForDataMarts,
       inheritedFrom
     };
   });
@@ -1527,6 +1394,7 @@ function normalizeYamlColumn(column) {
   return {
     name: column.name,
     description: column.description,
+    requiredForDataMarts: Array.isArray(column.required_for_data_marts) ? column.required_for_data_marts : [],
     dataType: column.config?.meta?.data_type || column.meta?.data_type || null,
     terminology: column.config?.meta?.terminology || column.meta?.terminology || null,
     terminologyNote: column.config?.meta?.terminology_note || column.meta?.terminology_note || null,
@@ -1627,12 +1495,12 @@ function classifyLayer(node) {
     return "Input layer";
   }
 
-  if (modelPath.includes("models/normalized_layer/staging/")) {
-    return "Normalized layer staging";
+  if (modelPath.includes("models/normalization/staging/")) {
+    return "Normalization staging";
   }
 
-  if (modelPath.includes("models/normalized_layer/final/")) {
-    return "Normalized layer final";
+  if (modelPath.includes("models/normalization/final/")) {
+    return "Normalization final";
   }
 
   if (modelPath.includes("models/core/")) {
@@ -1825,7 +1693,7 @@ function buildSeedViewer(manifestNode) {
     return {
       sourceType: "seed_preview",
       family: "terminology",
-      version: "latest",
+      version: compatibilityAssetVersion,
       folder: "versioned_terminology",
       fileName: path.posix.basename(normalizedPath),
       downloadUrl: buildTerminologySeedDownloadUrl({ manifestNode, baseDomain })
@@ -1838,10 +1706,10 @@ function buildSeedViewer(manifestNode) {
     return {
       sourceType: "seed_preview",
       family: "value_set",
-      version: "latest",
+      version: compatibilityAssetVersion,
       folder: "versioned_value_sets",
       fileName: path.posix.basename(normalizedPath),
-      downloadUrl: fileName ? `${baseDomain}/versioned_value_sets/latest/${fileName}` : null
+      downloadUrl: fileName ? `${baseDomain}/versioned_value_sets/${compatibilityAssetVersion}/${fileName}` : null
     };
   }
 
@@ -1858,7 +1726,7 @@ function buildTerminologySeedDownloadUrl({ manifestNode, baseDomain }) {
     return null;
   }
 
-  return `${baseDomain}/versioned_terminology/latest/${datasetKey}.csv_0_0_0.csv.gz`;
+  return `${baseDomain}/versioned_terminology/${compatibilityAssetVersion}/${datasetKey}.csv_0_0_0.csv.gz`;
 }
 
 function buildValueSetSeedObjectFileName({ manifestNode, normalizedPath }) {
@@ -2122,11 +1990,9 @@ function sortTargetCategory(categoryKey) {
   const priorities = {
     overview: 0,
     input_layer: 1,
-    normalized_layer: 2,
-    claims_preprocessing: 3,
-    core: 4,
-    data_marts: 5,
-    semantic_layer: 6
+    claims_preprocessing: 2,
+    core: 3,
+    data_marts: 4
   };
 
   return priorities[categoryKey] || 99;
@@ -2152,6 +2018,12 @@ function firstNonEmpty(...values) {
   }
 
   return "";
+}
+
+function rewriteCompatibilityUrl(value) {
+  return typeof value === "string"
+    ? value.replaceAll(legacyTuvaMainUrl, compatibilityCoreBlobUrl)
+    : value;
 }
 
 function cleanText(value) {

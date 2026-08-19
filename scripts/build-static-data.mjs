@@ -14,11 +14,20 @@ const distRoot = path.join(dagViewerRoot, "dist");
 const cacheRoot = path.join(dagViewerRoot, ".cache");
 const manifestPath = path.join(cacheRoot, "manifest.json");
 const lineageCacheRoot = path.join(cacheRoot, "lineage");
-const defaultRepoUrl = "https://github.com/tuva-health/tuva-core.git";
-const defaultGithubRef = "main";
-const staticSeedPreviewRowLimit = Number(process.env.TUVA_DAG_SEED_PREVIEW_ROW_LIMIT || 1000) || 1000;
+const compatibilityRepoUrl = "https://github.com/tuva-health/tuva-core.git";
+const compatibilityGithubRef = "9b59760465c757e94a41b4ac2cede7c40c2e9086";
+const compatibilitySeedPreviewRowLimit = 1000;
+const legacyTuvaMainUrl = "https://github.com/tuva-health/tuva/blob/main/";
+const compatibilityCoreBlobUrl = `https://github.com/tuva-health/tuva-core/blob/${compatibilityGithubRef}/`;
+const staticSeedPreviewRowLimit =
+  Number(process.env.TUVA_DAG_SEED_PREVIEW_ROW_LIMIT || compatibilitySeedPreviewRowLimit) ||
+  compatibilitySeedPreviewRowLimit;
 
 async function main() {
+  if (process.env.NETLIFY === "true" && staticSeedPreviewRowLimit !== compatibilitySeedPreviewRowLimit) {
+    throw new Error(`Compatibility deploy requires TUVA_DAG_SEED_PREVIEW_ROW_LIMIT=${compatibilitySeedPreviewRowLimit}`);
+  }
+
   const sourceRoot = await resolveSourceRoot();
   await prepareDist();
   await buildLiteManifest(sourceRoot);
@@ -26,44 +35,60 @@ async function main() {
 }
 
 async function resolveSourceRoot() {
-  const localSourceRoot = process.env.TUVA_DAG_SOURCE_ROOT || process.env.TUVA_CORE_PATH;
+  if (process.env.TUVA_DAG_SOURCE_ROOT) {
+    if (process.env.NETLIFY === "true") {
+      throw new Error("Compatibility deploy does not allow TUVA_DAG_SOURCE_ROOT on Netlify");
+    }
 
-  if (localSourceRoot) {
-    const sourceRoot = path.resolve(localSourceRoot);
+    const sourceRoot = path.resolve(process.env.TUVA_DAG_SOURCE_ROOT);
 
     if (!existsSync(path.join(sourceRoot, "dbt_project.yml"))) {
-      throw new Error(`Configured Tuva Core source root does not look like a Tuva checkout: ${sourceRoot}`);
+      throw new Error(`TUVA_DAG_SOURCE_ROOT does not look like a Tuva checkout: ${sourceRoot}`);
     }
 
     return sourceRoot;
   }
 
-  const siblingSourceRoot = path.resolve(dagViewerRoot, "..", "tuva-core");
-  if (existsSync(path.join(siblingSourceRoot, "dbt_project.yml"))) {
-    return siblingSourceRoot;
+  const repoUrl = process.env.TUVA_DAG_REPO_URL || compatibilityRepoUrl;
+  const githubRef = process.env.TUVA_DAG_GITHUB_REF || compatibilityGithubRef;
+  const sourceRoot = path.join(cacheRoot, "tuva-core");
+
+  if (repoUrl !== compatibilityRepoUrl) {
+    throw new Error(`Compatibility deploy requires TUVA_DAG_REPO_URL=${compatibilityRepoUrl}`);
   }
 
-  const repoUrl = process.env.TUVA_DAG_REPO_URL || defaultRepoUrl;
-  const githubRef = process.env.TUVA_DAG_GITHUB_REF || defaultGithubRef;
-  const sourceRoot = path.join(cacheRoot, "tuva-main");
+  if (githubRef !== compatibilityGithubRef) {
+    throw new Error(`Compatibility deploy requires TUVA_DAG_GITHUB_REF=${compatibilityGithubRef}`);
+  }
 
   await rm(sourceRoot, { recursive: true, force: true });
   await mkdir(cacheRoot, { recursive: true });
 
-  const result = spawnSync(
-    "git",
-    ["clone", "--depth=1", "--branch", githubRef, repoUrl, sourceRoot],
-    {
-      cwd: dagViewerRoot,
-      encoding: "utf8"
-    }
-  );
+  runGit(["init", sourceRoot], { cwd: dagViewerRoot });
+  runGit(["remote", "add", "origin", repoUrl], { cwd: sourceRoot });
+  runGit(["fetch", "--depth=1", "origin", githubRef], { cwd: sourceRoot });
+  runGit(["checkout", "--detach", "FETCH_HEAD"], { cwd: sourceRoot });
 
-  if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout || `Unable to clone ${repoUrl}#${githubRef}`);
+  const resolvedRef = runGit(["rev-parse", "HEAD"], { cwd: sourceRoot }).stdout.trim();
+
+  if (resolvedRef !== compatibilityGithubRef) {
+    throw new Error(`Expected ${compatibilityGithubRef}, resolved ${resolvedRef || "no commit"}`);
   }
 
   return sourceRoot;
+}
+
+function runGit(args, { cwd }) {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf8"
+  });
+
+  if (result.status !== 0) {
+    throw new Error(result.stderr || result.stdout || `git ${args.join(" ")} failed`);
+  }
+
+  return result;
 }
 
 async function prepareDist() {
@@ -152,7 +177,7 @@ function buildNode({ name, uniqueId, filePath, resourceType, doc, dependsOn, mat
     ...(config.meta || {})
   };
 
-  return {
+  return rewriteCompatibilityUrls({
     unique_id: uniqueId,
     resource_type: resourceType,
     package_name: "the_tuva_project",
@@ -178,7 +203,25 @@ function buildNode({ name, uniqueId, filePath, resourceType, doc, dependsOn, mat
       : Array.isArray(config.tags)
         ? config.tags
         : []
-  };
+  });
+}
+
+function rewriteCompatibilityUrls(value) {
+  if (typeof value === "string") {
+    return value.replaceAll(legacyTuvaMainUrl, compatibilityCoreBlobUrl);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(rewriteCompatibilityUrls);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [key, rewriteCompatibilityUrls(nestedValue)])
+    );
+  }
+
+  return value;
 }
 
 function buildManifestColumns(columns) {
@@ -249,8 +292,8 @@ function inferSchema(filePath, resourceType) {
     return "claims_preprocessing";
   }
 
-  if (filePath.startsWith("models/normalized_layer/")) {
-    return "normalized_layer";
+  if (filePath.startsWith("models/normalization/")) {
+    return "normalization";
   }
 
   return parts[1] || "model";

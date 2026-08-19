@@ -10,11 +10,7 @@ import { isMap, isSeq, parseDocument } from "yaml";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const dagViewerRoot = path.resolve(scriptDir, "..");
-const repoRoot = process.env.DAG_REPO_ROOT
-  ? path.resolve(process.env.DAG_REPO_ROOT)
-  : process.env.TUVA_CORE_PATH
-    ? path.resolve(process.env.TUVA_CORE_PATH)
-    : path.resolve(dagViewerRoot, "..", "tuva-core");
+const repoRoot = path.resolve(process.env.TUVA_DAG_SOURCE_ROOT || path.join(dagViewerRoot, "..", "tuva-core"));
 const publicRoot = path.join(dagViewerRoot, "public");
 const distRoot = path.join(dagViewerRoot, "dist");
 const port = Number(process.env.PORT || process.env.DAG_VIEWER_DEV_PORT || 8000);
