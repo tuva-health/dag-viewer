@@ -411,7 +411,11 @@ export async function createLiteManifest(sourceSet) {
   const core = resolvedSources.find((source) => source.role === "core");
   const flagManifestPath = core && path.join(core.root, "macros/data_quality/dq_logical_flag_manifest.sql");
   const flagManifest = flagManifestPath && existsSync(flagManifestPath) ? await readFile(flagManifestPath, "utf8") : "";
-  const logicalFlagNames = [...new Set(Array.from(flagManifest.matchAll(/['"]source_model_name['"]\s*:\s*['"]([^'"]+)['"]/g), (match) => match[1]))];
+  const domainManifestPath = core && path.join(core.root, "macros/data_quality/dq_summary_helpers.sql");
+  const domainManifest = domainManifestPath && existsSync(domainManifestPath) ? await readFile(domainManifestPath, "utf8") : "";
+  const logicalHelpersPath = core && path.join(core.root, "macros/data_quality/dq_logical_helpers.sql");
+  const logicalHelpers = logicalHelpersPath && existsSync(logicalHelpersPath) ? await readFile(logicalHelpersPath, "utf8") : "";
+  const chunkCount = Number(core?.dbtProject?.vars?.dq_logical_chunk_count ?? logicalHelpers.match(/var\(['"]dq_logical_chunk_count['"],\s*(\d+)\)/)?.[1]);
 
   for (const resource of resources) {
     const sql =
@@ -459,7 +463,7 @@ export async function createLiteManifest(sourceSet) {
         if (reference.expression === "model_name" && /dq_enabled_input_layer_model_names\s*\(/.test(sql)) {
           names = resources.filter((entry) => entry.source === core && entry.filePath.startsWith("models/input_layer/")).map((entry) => entry.name);
         } else if (["source_model_name", "definition['source_model_name']"].includes(reference.expression) && /dq_enabled_logical_test_manifest_chunk/.test(sql)) {
-          names = logicalFlagNames;
+          names = resolveLogicalCatalogRefs({ sql, flagManifest, domainManifest, chunkCount });
         }
       }
       if (!names.length) {
@@ -472,7 +476,7 @@ export async function createLiteManifest(sourceSet) {
         return id;
       });
       catalogDependencies.push(...dependencies);
-      resolvedDynamicRefs.push({ ...reference, resolution: "catalog_union", dependencies });
+      resolvedDynamicRefs.push({ ...reference, resolution: "catalog_union", dependencies, ...(reference.expression === "model_name" ? {} : { chunkCount }) });
     }
     unresolvedRefs.push(...remainingUnresolvedRefs);
     nodes[resource.uniqueId] = buildNode({
@@ -515,6 +519,42 @@ export async function createLiteManifest(sourceSet) {
     nodes,
     sources: externalSources
   };
+}
+
+export function resolveLogicalCatalogRefs({ sql, flagManifest, domainManifest, chunkCount }) {
+  const chunk = sql.match(/dq_enabled_logical_test_manifest_chunk(_by_model)?\(\s*(\d+)\s*\)/);
+  const grouped = flagManifest.match(/set grouped_definitions\s*=\s*([\s\S]*?)%}/);
+  const clinical = domainManifest.match(/['"]name['"]:\s*['"]clinical['"][\s\S]*?['"]model_names['"]:\s*(\[[\s\S]*?\])/);
+  const claims = domainManifest.match(/set claims_model_names\s*=\s*(\[[\s\S]*?\])/);
+  const provider = domainManifest.match(/claims_model_names\.append\(['"]([^'"]+)['"]\)/);
+  if (!chunk || !grouped || !clinical || !claims || !provider || !Number.isInteger(chunkCount) || chunkCount < 1) {
+    throw new Error("Cannot resolve the Core logical Data Quality catalog/chunk contract.");
+  }
+  const groups = parseYaml(grouped[1].trim());
+  const clinicalInputs = parseYaml(clinical[1]);
+  const claimsInputs = parseYaml(claims[1]);
+  const union = new Set();
+  // Core enables clinical as one domain; provider attribution requires claims.
+  // Slice each enabled registry before taking the across-configuration union.
+  for (const clinicalEnabled of [false, true]) {
+    for (const claimsEnabled of [false, true]) {
+      for (const providerEnabled of [false, true]) {
+        const enabled = new Set([
+          ...(clinicalEnabled ? clinicalInputs : []),
+          ...(claimsEnabled ? claimsInputs : []),
+          ...(claimsEnabled && providerEnabled ? [provider[1]] : [])
+        ]);
+        const filtered = groups.filter((group) => enabled.has(group.input_model_name));
+        const names = chunk[1]
+          ? [...new Set(filtered.map((group) => group.source_model_name))]
+          : filtered.flatMap((group) => group.test_names.map(() => group.source_model_name));
+        names.forEach((name, index) => {
+          if (index % chunkCount === Number(chunk[2])) union.add(name);
+        });
+      }
+    }
+  }
+  return [...union].sort();
 }
 
 function isDeclaredExternalRef(source, reference) {
@@ -912,7 +952,7 @@ async function writeSourceProvenance(manifest) {
   );
   const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
   const rows = provenance.sources.map((source) => `<tr><th>${escape(source.id)}<small>${escape(source.packageName)}</small></th><td>${escape(source.packageVersion)}</td><td>${escape(source.assetVersion || "No assets")}${source.assetBaseUrl ? `<strong>Preview snapshot override</strong><small>${escape(source.assetBaseUrl)}</small>` : ""}</td><td><a href="${escape(source.repositoryUrl.replace(/\.git$/, ""))}/commit/${escape(source.revision)}">${escape(source.revision)}</a><small>Scanned content: ${escape(source.contentSha256)}</small>${source.dirty ? "<strong>Local changes included</strong>" : ""}</td></tr>`).join("");
-  await writeFile(path.join(distRoot, "sources.html"), `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sources | Tuva DAG Viewer</title><style>body{font:16px/1.6 system-ui,sans-serif;color:#242424;background:#fafafa;max-width:1200px;margin:48px auto;padding:0 24px}a{color:#43329e}h1{font-size:32px}table{width:100%;border-collapse:collapse;background:white}th,td{text-align:left;padding:16px;border-bottom:1px solid #ddd;vertical-align:top}small{display:block;color:#555;font-size:12px;overflow-wrap:anywhere}td:last-child{max-width:420px;overflow-wrap:anywhere}strong{display:block;color:#853c00}.scroll{overflow:auto}</style><a href="./?target=system_overview">← DAG Viewer</a><h1>Sources</h1><p>Core and eight standalone packages, built ${escape(manifest.metadata.generated_at)}.</p><p>This catalog shows possible lineage across configurations. Connector inputs and optional overrides remain external. Data Quality catalog loops include their declared source union; an individual dbt run can enable a subset.</p><div class="scroll"><table><thead><tr><th>Repository / dbt package</th><th>Code version</th><th>Asset version</th><th>Exact source</th></tr></thead><tbody>${rows}</tbody></table></div><p><a href="./data/source-provenance.json">Download provenance, asset manifest hashes, and reference resolutions</a></p></html>\n`);
+  await writeFile(path.join(distRoot, "sources.html"), `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sources | Tuva DAG Viewer</title><style>body{font:16px/1.6 system-ui,sans-serif;color:#242424;background:#fafafa;max-width:1200px;margin:48px auto;padding:0 24px}a{color:#43329e}h1{font-size:32px}table{width:100%;border-collapse:collapse;background:white}th,td{text-align:left;padding:16px;border-bottom:1px solid #ddd;vertical-align:top}small{display:block;color:#555;font-size:12px;overflow-wrap:anywhere}td:last-child{max-width:420px;overflow-wrap:anywhere}strong{display:block;color:#853c00}.scroll{overflow:auto}</style><a href="./?target=system_overview">← DAG Viewer</a><h1>Sources</h1><p>Core and eight standalone packages, built ${escape(manifest.metadata.generated_at)}.</p><p>This catalog shows possible lineage across configurations. Connector inputs and optional overrides remain external. Data Quality catalog loops include their possible sources across enabled domains, preserving the default chunk count; an individual dbt run can enable a subset.</p><div class="scroll"><table><thead><tr><th>Repository / dbt package</th><th>Code version</th><th>Asset version</th><th>Exact source</th></tr></thead><tbody>${rows}</tbody></table></div><p><a href="./data/source-provenance.json">Download provenance, asset manifest hashes, and reference resolutions</a></p></html>\n`);
 }
 
 function buildStaticResponse({ payload, targets }) {

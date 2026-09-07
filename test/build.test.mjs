@@ -7,7 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 
-import { createLiteManifest, readCsvPreviewFromUrl, resolveResourceConfig, validateSourceContract } from "../scripts/build-static-data.mjs";
+import { createLiteManifest, readCsvPreviewFromUrl, resolveLogicalCatalogRefs, resolveResourceConfig, validateSourceContract } from "../scripts/build-static-data.mjs";
 import { buildSeedViewer, isVisibleSupportingSeed } from "../scripts/build-lineage.mjs";
 
 test("required sources cannot silently become planned or share a dbt namespace", () => {
@@ -73,4 +73,23 @@ test("streamed gzip previews count CSV records and hash raw objects with Content
   assert.equal(preview.contentSha256, createHash("sha256").update(payload).digest("hex"));
   await assert.rejects(readCsvPreviewFromUrl(`${base}/seed.gz`, 1, ["wrong"]), /header mismatch/);
   await assert.rejects(readCsvPreviewFromUrl(`${base}/broken.gz`, 1), /header check/);
+});
+
+test("logical catalog unions preserve chunk ordering across enabled domains", () => {
+  const flagManifest = `{% set grouped_definitions = [
+    {'source_model_name': 'eligibility_flags', 'input_model_name': 'eligibility', 'test_names': ['a', 'b']},
+    {'source_model_name': 'claim_flags', 'input_model_name': 'claim', 'test_names': ['c']},
+    {'source_model_name': 'provider_flags', 'input_model_name': 'provider', 'test_names': ['d']},
+    {'source_model_name': 'patient_flags', 'input_model_name': 'patient', 'test_names': ['e', 'f', 'g']}
+  ] %}`;
+  const domainManifest = `{'name': 'clinical', 'model_names': ['patient']}
+    {% set claims_model_names = ['eligibility', 'claim'] %}
+    {% do claims_model_names.append('provider') %}`;
+  const resolve = (name, index) => resolveLogicalCatalogRefs({
+    sql: `${name}(${index})`, flagManifest, domainManifest, chunkCount: 2
+  });
+  assert.deepEqual(resolve('dq_enabled_logical_test_manifest_chunk_by_model', 0), ['eligibility_flags', 'patient_flags', 'provider_flags']);
+  assert.deepEqual(resolve('dq_enabled_logical_test_manifest_chunk_by_model', 1), ['claim_flags', 'patient_flags']);
+  assert.deepEqual(resolve('dq_enabled_logical_test_manifest_chunk', 1), ['eligibility_flags', 'patient_flags', 'provider_flags']);
+  assert.throws(() => resolveLogicalCatalogRefs({ sql: '', flagManifest, domainManifest, chunkCount: 2 }), /catalog\/chunk contract/);
 });

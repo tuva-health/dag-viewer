@@ -34,7 +34,10 @@ records the exact SHA-256 of each asset manifest used for previews.
 
 This is an architecture catalog across configurations, not the enabled graph of
 one dbt invocation. Data Quality catalog loops use the union of their declared
-Input Layer/flag sources; provenance records those expanded dynamic refs.
+Input Layer/flag sources across clinical, claims, and provider-attribution
+enablement. Logical result/failure parts preserve the registry order and the
+project default chunk count before taking that union; provenance records the
+expanded refs and chunk count.
 Unknown dynamic refs and missing literal refs fail the build. Shared domain
 switches and user overrides may select a subset at runtime.
 
