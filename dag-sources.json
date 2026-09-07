@@ -9,7 +9,7 @@
       "status": "active",
       "required": true,
       "repositoryUrl": "https://github.com/tuva-health/tuva-core.git",
-      "ref": "cff068369533cd89b7d0d37dc45e84d660046b6e",
+      "ref": "131d12a5225282563917b76af92718b555c24d4d",
       "pathEnv": "TUVA_CORE_PATH",
       "localCandidates": [
         "../tuva-core"
