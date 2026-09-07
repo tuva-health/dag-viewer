@@ -50,7 +50,8 @@ async function main() {
 
   server.listen(port, host, () => {
     process.stdout.write(`Tuva DAG Viewer dev server: http://${host}:${port}/\n`);
-    process.stdout.write("Edit mode is enabled only through this localhost server.\n");
+    process.stdout.write("Edit mode is enabled only through this localhost server and remains Tuva Core-only.\n");
+    process.stdout.write("Use npm run build followed by npm run serve for multi-repository release QA.\n");
   });
 }
 

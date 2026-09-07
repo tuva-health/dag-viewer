@@ -1,0 +1,209 @@
+{
+  "contractVersion": 1,
+  "name": "tuva-1.0",
+  "sources": [
+    {
+      "id": "tuva-core",
+      "packageName": "the_tuva_project",
+      "role": "core",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/tuva-core.git",
+      "ref": "24ed80b3f6774d4457b2e0e262b9759a0ebea7ab",
+      "pathEnv": "TUVA_CORE_PATH",
+      "localCandidates": [
+        "../tuva-core"
+      ],
+      "assetVersionVar": "tuva_core_data_asset_version",
+      "assetPrefix": "tuva-core",
+      "connectorRefs": [
+        "appointment",
+        "condition",
+        "eligibility",
+        "encounter",
+        "immunization",
+        "lab_result",
+        "location",
+        "medical_claim",
+        "medication",
+        "observation",
+        "patient",
+        "pharmacy_claim",
+        "practitioner",
+        "procedure",
+        "provider_attribution"
+      ]
+    },
+    {
+      "id": "ahrq_quality_indicators",
+      "packageName": "ahrq_quality_indicators",
+      "role": "data_mart",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/ahrq_quality_indicators.git",
+      "ref": "0946e1c4d184024f91467dd08cc6d0be4f126da9",
+      "pathEnv": "TUVA_DAG_AHRQ_QUALITY_INDICATORS_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/ahrq_quality_indicators"
+      ],
+      "viewer": {
+        "key": "ahrq_quality_indicators",
+        "label": "AHRQ Quality Indicators",
+        "categoryKey": "data_marts",
+        "categoryLabel": "Data Marts"
+      },
+      "assetVersionVar": "ahrq_quality_indicators_data_asset_version",
+      "assetPrefix": "data-marts/ahrq-quality-indicators"
+    },
+    {
+      "id": "ccsr",
+      "packageName": "ccsr",
+      "role": "grouper",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/ccsr.git",
+      "ref": "768a4aa03df951c10638f54c85d3db9ec246a5cc",
+      "pathEnv": "TUVA_DAG_CCSR_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/ccsr"
+      ],
+      "viewer": {
+        "key": "ccsr",
+        "label": "AHRQ CCSRs",
+        "categoryKey": "data_marts",
+        "categoryLabel": "Data Marts"
+      },
+      "assetVersionVar": "ccsr_data_asset_version",
+      "assetPrefix": "data-marts/ccsr"
+    },
+    {
+      "id": "cms_chronic_conditions",
+      "packageName": "cms_chronic_conditions",
+      "role": "data_mart",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/cms_chronic_conditions.git",
+      "ref": "fc42301b5693a0ff9d9dd2ec4d7ca2eaee36c011",
+      "pathEnv": "TUVA_DAG_CMS_CHRONIC_CONDITIONS_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/cms_chronic_conditions"
+      ],
+      "viewer": {
+        "key": "cms_chronic_conditions",
+        "label": "CMS Chronic Conditions",
+        "categoryKey": "data_marts",
+        "categoryLabel": "Data Marts"
+      },
+      "assetVersionVar": "cms_chronic_conditions_data_asset_version",
+      "assetPrefix": "data-marts/cms-chronic-conditions"
+    },
+    {
+      "id": "cms_hcc",
+      "packageName": "cms_hcc",
+      "role": "data_mart",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/cms_hcc.git",
+      "ref": "3b249b52ab428771548d1a52ade7b6e291ab8667",
+      "pathEnv": "TUVA_DAG_CMS_HCC_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/cms_hcc"
+      ],
+      "externalRefs": [
+        "chronic_hccs",
+        "suspect_hccs"
+      ],
+      "viewer": {
+        "key": "cms_hcc",
+        "label": "CMS HCC",
+        "categoryKey": "data_marts",
+        "categoryLabel": "Data Marts"
+      },
+      "assetVersionVar": "cms_hcc_data_asset_version",
+      "assetPrefix": "data-marts/cms-hcc"
+    },
+    {
+      "id": "fhir_preprocessing",
+      "packageName": "fhir_preprocessing",
+      "role": "preprocessing_extension",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/fhir_preprocessing.git",
+      "ref": "023a5b5b053bb64264c11ef2cf138e04c018c9f7",
+      "pathEnv": "TUVA_DAG_FHIR_PREPROCESSING_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/fhir_preprocessing"
+      ],
+      "viewer": {
+        "key": "fhir_preprocessing",
+        "label": "FHIR Preprocessing",
+        "categoryKey": "extensions",
+        "categoryLabel": "Extensions"
+      },
+      "assetPrefix": "data-marts/fhir-preprocessing"
+    },
+    {
+      "id": "nyu_ed_classification",
+      "packageName": "nyu_ed_classification",
+      "role": "grouper",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/nyu_ed_classification.git",
+      "ref": "e2dbeb93e96f97b3d42b30ea57dc3c52aa610eba",
+      "pathEnv": "TUVA_DAG_NYU_ED_CLASSIFICATION_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/nyu_ed_classification"
+      ],
+      "viewer": {
+        "key": "nyu_ed_classification",
+        "label": "NYU ED Classification",
+        "categoryKey": "data_marts",
+        "categoryLabel": "Data Marts"
+      },
+      "assetVersionVar": "nyu_ed_classification_data_asset_version",
+      "assetPrefix": "data-marts/nyu-ed-classification"
+    },
+    {
+      "id": "quality_measures",
+      "packageName": "quality_measures",
+      "role": "data_mart",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/quality_measures.git",
+      "ref": "88e490409e4ff5cd0ee7b61e189d88548daec76f",
+      "pathEnv": "TUVA_DAG_QUALITY_MEASURES_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/quality_measures"
+      ],
+      "viewer": {
+        "key": "quality_measures",
+        "label": "Quality Measures",
+        "categoryKey": "data_marts",
+        "categoryLabel": "Data Marts"
+      },
+      "assetVersionVar": "quality_measures_data_asset_version",
+      "assetPrefix": "data-marts/quality-measures"
+    },
+    {
+      "id": "semantic-layer",
+      "packageName": "semantic_layer",
+      "role": "semantic_layer",
+      "status": "active",
+      "required": true,
+      "repositoryUrl": "https://github.com/tuva-health/semantic-layer.git",
+      "ref": "8eb3af8c5c6d173cd6a916be9c5f7bbf39995af0",
+      "pathEnv": "TUVA_DAG_SEMANTIC_LAYER_PATH",
+      "localCandidates": [
+        "../../tuva-dbt-packages/semantic-layer"
+      ],
+      "viewer": {
+        "key": "semantic_layer",
+        "label": "Semantic Layer",
+        "categoryKey": "semantic_layer",
+        "categoryLabel": "Semantic Layer"
+      },
+      "assetVersionVar": "semantic_layer_data_asset_version",
+      "assetPrefix": "data-marts/semantic-layer"
+    }
+  ]
+}

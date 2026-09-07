@@ -23,7 +23,15 @@ const expectedTargets = [
   "medical_claim",
   "member_month",
   "cost",
-  "utilization"
+  "utilization",
+  "ahrq_quality_indicators",
+  "ccsr",
+  "cms_chronic_conditions",
+  "cms_hcc",
+  "fhir_preprocessing",
+  "nyu_ed_classification",
+  "quality_measures",
+  "semantic_layer"
 ];
 
 if (!fs.existsSync(overviewPath)) {
