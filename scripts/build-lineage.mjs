@@ -18,14 +18,34 @@ const cacheRoot = process.env.DAG_CACHE_DIR
 const manifestPath = process.env.DAG_MANIFEST_PATH
   ? path.resolve(process.env.DAG_MANIFEST_PATH)
   : path.join(repoRoot, "integration_tests", "target", "manifest.json");
+const corePackageName = process.env.DAG_CORE_PACKAGE_NAME || "the_tuva_project";
 
 export const DEFAULT_TARGET_KEY = "appointment";
 export const SYSTEM_OVERVIEW_TARGET_KEY = "system_overview";
 
 const packageRoots = {
   integration_tests: path.join(repoRoot, "integration_tests"),
-  the_tuva_project: repoRoot
+  [corePackageName]: repoRoot,
+  ...parsePackageRoots(process.env.DAG_PACKAGE_ROOTS_JSON)
 };
+
+function parsePackageRoots(value) {
+  if (!value) {
+    return {};
+  }
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new Error(`DAG_PACKAGE_ROOTS_JSON must contain a JSON object: ${error.message}`);
+  }
+
+  return Object.fromEntries(
+    Object.entries(parsed).map(([packageName, packageRoot]) => [packageName, path.resolve(String(packageRoot))])
+  );
+}
 
 const fixedClaimsTargets = [
   {
@@ -124,7 +144,8 @@ const OVERVIEW_CATEGORY_ORDER = {
   claims_preprocessing: 2,
   core: 3,
   data_marts: 4,
-  semantic_layer: 5
+  extensions: 5,
+  semantic_layer: 6
 };
 
 const normalizedTargetKeyOverrides = {
@@ -204,7 +225,7 @@ export async function buildLineagePayload({ targetKey = DEFAULT_TARGET_KEY } = {
     return buildSystemOverviewPayload({ manifest, catalog, target });
   }
 
-  const nodeMap = manifest.nodes || {};
+  const nodeMap = { ...(manifest.nodes || {}), ...(manifest.sources || {}) };
   const yamlCache = new Map();
   const graph = collectVisibleGraph({ manifest, catalog, target });
   const nodesById = new Map();
@@ -264,6 +285,10 @@ export async function buildLineagePayload({ targetKey = DEFAULT_TARGET_KEY } = {
         alias: manifestNode.alias || manifestNode.name,
         schemaName: manifestNode.schema || null,
         packageName: manifestNode.package_name,
+        repository: manifestNode.tuva_source?.id || null,
+        repositoryUrl: manifestNode.tuva_source?.repositoryUrl || null,
+        revision: manifestNode.tuva_source?.revision || null,
+        sourceContentSha256: manifestNode.tuva_source?.contentSha256 || null,
         tags: manifestNode.tags || [],
         primaryKeyColumns: columns.filter((column) => column.isPrimaryKey).map((column) => column.name)
       },
@@ -333,6 +358,10 @@ export async function buildLineagePayload({ targetKey = DEFAULT_TARGET_KEY } = {
         alias: manifestNode.alias || manifestNode.name,
         schemaName: manifestNode.schema || null,
         packageName: manifestNode.package_name,
+        repository: manifestNode.tuva_source?.id || null,
+        repositoryUrl: manifestNode.tuva_source?.repositoryUrl || null,
+        revision: manifestNode.tuva_source?.revision || null,
+        sourceContentSha256: manifestNode.tuva_source?.contentSha256 || null,
         tags: manifestNode.tags || [],
         primaryKeyColumns: columns.filter((column) => column.isPrimaryKey).map((column) => column.name)
       },
@@ -398,7 +427,11 @@ export async function buildLineagePayload({ targetKey = DEFAULT_TARGET_KEY } = {
       technical: {
         alias: representativeNode?.alias || boundaryTarget.key,
         schemaName: representativeNode?.schema || null,
-        packageName: representativeNode?.package_name || "the_tuva_project",
+        packageName: representativeNode?.package_name || corePackageName,
+        repository: representativeNode?.tuva_source?.id || null,
+        repositoryUrl: representativeNode?.tuva_source?.repositoryUrl || null,
+        revision: representativeNode?.tuva_source?.revision || null,
+        sourceContentSha256: representativeNode?.tuva_source?.contentSha256 || null,
         tags: representativeNode?.tags || [],
         primaryKeyColumns: representativeColumns.filter((column) => column.isPrimaryKey).map((column) => column.name)
       },
@@ -446,7 +479,22 @@ export async function buildLineagePayload({ targetKey = DEFAULT_TARGET_KEY } = {
     });
   }
 
-  const preRoleNodes = [...modelNodes, ...seedNodes, ...collapsedNodes];
+  const externalNodes = orderedDisplayNodeIds.flatMap((id) => {
+    const node = nodeMap[id];
+    if (node?.resource_type !== "source") return [];
+    return [{
+      id, name: node.name, resourceType: "source", sourceStyle: true,
+      layer: node.source_name === "connector_input" ? "Connector input" : "Optional override",
+      depth: depthById.get(id) || 0, folderLabel: "Installing project",
+      description: node.description, materialized: "external",
+      technical: { alias: node.alias, schemaName: "external", packageName: node.package_name,
+        repository: node.tuva_source?.id, revision: node.tuva_source?.revision, tags: node.tags || [], primaryKeyColumns: [] },
+      paths: { sql: null, yaml: null, manifestNodeId: id, targetKey: target.key },
+      mainDependencies: [], supportingDependencies: [], curated: {},
+      baseNodeType: "input", nodeType: "input", dagBoundary: null, seedViewer: null, sql: "", columns: []
+    }];
+  });
+  const preRoleNodes = [...modelNodes, ...seedNodes, ...collapsedNodes, ...externalNodes];
   applyContextualNodeTypes({
     nodes: preRoleNodes,
     edges: graph.edges
@@ -551,17 +599,14 @@ export async function buildLineagePayload({ targetKey = DEFAULT_TARGET_KEY } = {
       documentedColumns,
       generatedFrom: "manifest + YAML + SQL"
     },
-    sourceArtifacts: {
-      manifest: manifestPath,
-      persistedPayload: getOutputPathForTarget(target.key)
-    },
+    sourceArtifacts: buildSourceArtifacts(manifest, target),
     nodes,
     edges
   };
 }
 
 async function buildSystemOverviewPayload({ manifest, catalog, target }) {
-  const nodeMap = manifest.nodes || {};
+  const nodeMap = { ...(manifest.nodes || {}), ...(manifest.sources || {}) };
   const yamlCache = new Map();
   const overviewTargets = catalog.targets
     .filter((candidate) => OVERVIEW_CATEGORY_ORDER[candidate.categoryKey] !== undefined)
@@ -606,7 +651,11 @@ async function buildSystemOverviewPayload({ manifest, catalog, target }) {
       technical: {
         alias: representativeNode?.alias || overviewTarget.key,
         schemaName: representativeNode?.schema || null,
-        packageName: representativeNode?.package_name || "the_tuva_project",
+        packageName: representativeNode?.package_name || corePackageName,
+        repository: representativeNode?.tuva_source?.id || null,
+        repositoryUrl: representativeNode?.tuva_source?.repositoryUrl || null,
+        revision: representativeNode?.tuva_source?.revision || null,
+        sourceContentSha256: representativeNode?.tuva_source?.contentSha256 || null,
         tags: representativeNode?.tags || [],
         primaryKeyColumns: representativeColumns.filter((column) => column.isPrimaryKey).map((column) => column.name)
       },
@@ -688,21 +737,29 @@ async function buildSystemOverviewPayload({ manifest, catalog, target }) {
       documentedColumns: 0,
       generatedFrom: "manifest stage overview"
     },
-    sourceArtifacts: {
-      manifest: manifestPath,
-      persistedPayload: getOutputPathForTarget(target.key)
-    },
+    sourceArtifacts: buildSourceArtifacts(manifest, target),
     nodes,
     edges
+  };
+}
+
+function buildSourceArtifacts(manifest, target) {
+  return {
+    manifest: manifestPath,
+    persistedPayload: getOutputPathForTarget(target.key),
+    sourceSetName: manifest.metadata?.tuva_dag?.sourceSetName || null,
+    sources: manifest.metadata?.tuva_dag?.sources || [],
+    externalRefs: manifest.metadata?.tuva_dag?.externalRefs || [],
+    dynamicRefs: manifest.metadata?.tuva_dag?.dynamicRefs || [],
+    resolvedDynamicRefs: manifest.metadata?.tuva_dag?.resolvedDynamicRefs || [],
+    unresolvedRefs: manifest.metadata?.tuva_dag?.unresolvedRefs || []
   };
 }
 
 function collectSystemOverviewEdges({ manifest, catalog }) {
   const edgeSet = new Set();
   const nodeMap = manifest.nodes || {};
-  const models = Object.values(nodeMap).filter(
-    (node) => node.resource_type === "model" && node.package_name === "the_tuva_project"
-  );
+  const models = Object.values(nodeMap).filter((node) => node.resource_type === "model");
 
   for (const model of models) {
     const targetBucket = resolveOverviewTargetForManifestNode(model, catalog);
@@ -743,7 +800,17 @@ function collectSystemOverviewEdges({ manifest, catalog }) {
 }
 
 function resolveOverviewTargetForManifestNode(manifestNode, catalog) {
-  if (!manifestNode || manifestNode.resource_type !== "model" || manifestNode.package_name !== "the_tuva_project") {
+  if (!manifestNode || manifestNode.resource_type !== "model") {
+    return null;
+  }
+
+  const boundaryTarget = catalog.boundaryByNodeId.get(manifestNode.unique_id) || null;
+
+  if (boundaryTarget) {
+    return boundaryTarget;
+  }
+
+  if (manifestNode.package_name !== corePackageName) {
     return null;
   }
 
@@ -785,11 +852,6 @@ function resolveOverviewTargetForManifestNode(manifestNode, catalog) {
     return catalog.targetByKey.get(targetKey) || null;
   }
 
-  if (modelPath.startsWith("models/data_marts/")) {
-    const groupName = modelPath.split("/")[2];
-    return groupName ? catalog.targetByKey.get(groupName) || null : null;
-  }
-
   return null;
 }
 
@@ -798,7 +860,7 @@ function resolveOverviewNodeType(categoryKey) {
     return "input";
   }
 
-  if (categoryKey === "core" || categoryKey === "data_marts") {
+  if (categoryKey === "core" || categoryKey === "data_marts" || categoryKey === "extensions") {
     return "output";
   }
 
@@ -826,8 +888,10 @@ async function loadManifest() {
 }
 
 function discoverTargetCatalog(manifest) {
-  const models = Object.values(manifest.nodes || {}).filter(
-    (node) => node.resource_type === "model" && node.package_name === "the_tuva_project"
+  const allModels = Object.values(manifest.nodes || {}).filter((node) => node.resource_type === "model");
+  const models = allModels.filter((node) => node.package_name === corePackageName);
+  const standaloneSources = (manifest.metadata?.tuva_dag?.sources || []).filter(
+    (source) => source.status === "resolved" && source.packageName !== corePackageName && source.viewer
   );
   const targets = [];
   const boundaryByNodeId = new Map();
@@ -921,41 +985,37 @@ function discoverTargetCatalog(manifest) {
     }
   }
 
-  const dataMartGroups = groupDataMartNodes(models);
+  for (const source of standaloneSources) {
+    const packageNodes = allModels.filter((node) => node.package_name === source.packageName);
+    const rootNodeIds = selectStandalonePackageOutputs(packageNodes);
 
-  for (const [groupName, groupNodes] of dataMartGroups.entries()) {
-    if (groupName === "metadata") {
+    if (!packageNodes.length || !rootNodeIds.length) {
       continue;
     }
 
-    const rootNodeIds = groupNodes
-      .filter((node) => isPublicDataMartOutput(normalizePath(node.original_file_path), groupName))
-      .map((node) => node.unique_id);
-
-    if (!rootNodeIds.length) {
-      continue;
-    }
-
-    const label = formatLabel(groupName);
+    const targetKey = source.viewer.key || source.id;
+    const label = source.viewer.label || formatLabel(targetKey);
+    const categoryKey = source.viewer.categoryKey || "data_marts";
+    const categoryLabel = source.viewer.categoryLabel || "Data Marts";
     const target = buildFamilyTarget({
-      key: groupName,
+      key: targetKey,
       label,
-      kind: "data_mart",
-      categoryKey: "data_marts",
-      categoryLabel: "Data Marts",
+      kind: source.role || "standalone_package",
+      categoryKey,
+      categoryLabel,
       title: `${label} DAG`,
-      subtitle: `Lineage for the ${label} data mart rooted at its public output models.`,
-      folderLabel: `data_marts/${groupName}`,
+      subtitle: `Lineage for the ${label} standalone package rooted at its public output models.`,
+      folderLabel: source.id,
       recurseWhenCollapsed: true,
       collapsedNodeType: "output",
       rootNodeIds,
-      memberNodeIds: groupNodes.map((node) => node.unique_id),
+      memberNodeIds: packageNodes.map((node) => node.unique_id),
       manifestNodesById: manifest.nodes || {}
     });
 
     targets.push(target);
 
-    for (const node of groupNodes) {
+    for (const node of packageNodes) {
       boundaryByNodeId.set(node.unique_id, target);
     }
   }
@@ -969,6 +1029,13 @@ function discoverTargetCatalog(manifest) {
 
     return left.label.localeCompare(right.label);
   });
+  const duplicateTargetKeys = sortedTargets
+    .map((target) => target.key)
+    .filter((key, index, keys) => keys.indexOf(key) !== index);
+
+  if (duplicateTargetKeys.length) {
+    throw new Error(`Duplicate DAG target keys: ${uniqueStrings(duplicateTargetKeys).join(", ")}`);
+  }
 
   return {
     targets: sortedTargets,
@@ -1142,30 +1209,27 @@ function buildFamilyTarget({
   };
 }
 
-function groupDataMartNodes(models) {
-  const groups = new Map();
+function selectStandalonePackageOutputs(packageNodes) {
+  const candidates = packageNodes.filter((node) => {
+    const modelPath = normalizePath(node.original_file_path || node.path || "");
+    const segments = modelPath.split("/").map((segment) => segment.toLowerCase());
 
-  for (const node of models) {
-    const modelPath = normalizePath(node.original_file_path);
+    return !segments.includes("staging") && !segments.includes("intermediate");
+  });
 
-    if (!modelPath.startsWith("models/data_marts/")) {
-      continue;
-    }
-
-    const groupName = modelPath.split("/")[2];
-
-    if (!groupName) {
-      continue;
-    }
-
-    if (!groups.has(groupName)) {
-      groups.set(groupName, []);
-    }
-
-    groups.get(groupName).push(node);
+  if (candidates.length) {
+    return candidates.map((node) => node.unique_id);
   }
 
-  return groups;
+  const dependedOnNodeIds = new Set(
+    packageNodes.flatMap((node) =>
+      (node.depends_on?.nodes || []).filter((nodeId) => packageNodes.some((candidate) => candidate.unique_id === nodeId))
+    )
+  );
+
+  return packageNodes
+    .filter((node) => !dependedOnNodeIds.has(node.unique_id))
+    .map((node) => node.unique_id);
 }
 
 function getTargetConfigFromCatalog(catalog, targetKey) {
@@ -1179,7 +1243,7 @@ function getTargetConfigFromCatalog(catalog, targetKey) {
 }
 
 function collectVisibleGraph({ manifest, catalog, target }) {
-  const nodeMap = manifest.nodes || {};
+  const nodeMap = { ...(manifest.nodes || {}), ...(manifest.sources || {}) };
   const displayNodes = new Map();
   const edgeSet = new Set();
   const visitedActualNodeIds = new Set();
@@ -1311,6 +1375,10 @@ function mapManifestNodeToDisplayDescriptor({ manifestNode, target, catalog }) {
     };
   }
 
+  if (manifestNode.resource_type === "source") {
+    return { id: manifestNode.unique_id, kind: "actual", actualNodeId: manifestNode.unique_id };
+  }
+
   if (manifestNode.resource_type !== "model") {
     return null;
   }
@@ -1343,7 +1411,7 @@ function shouldStopRecursingAtVisibleNode({ manifestNode, target }) {
   }
 
   if (isInputLayerModel(manifestNode)) {
-    return true;
+    return !(manifestNode.depends_on?.nodes || []).some((id) => id.startsWith("source."));
   }
 
   return false;
@@ -1623,6 +1691,18 @@ function classifyLayer(node) {
     return "Synthetic input";
   }
 
+  if (node.resource_type === "model" && node.package_name !== corePackageName) {
+    if (node.tuva_source?.role === "preprocessing_extension") {
+      return "Preprocessing extension";
+    }
+
+    if (node.tuva_source?.role === "semantic_layer") {
+      return "Semantic layer";
+    }
+
+    return "Data mart";
+  }
+
   if (modelPath.includes("models/input_layer/")) {
     return "Input layer";
   }
@@ -1660,7 +1740,7 @@ function isInputLayerModel(node) {
   }
 
   const modelPath = normalizePath(node.original_file_path || node.path || "");
-  return modelPath.startsWith("models/input_layer/");
+  return node.package_name === corePackageName && modelPath.startsWith("models/input_layer/");
 }
 
 function deriveFolderLabel(node) {
@@ -1813,122 +1893,138 @@ function resolveNodeType({ manifestNode, target, nodeId, yamlEntry }) {
   });
 }
 
-function buildSeedViewer(manifestNode) {
+export function buildSeedViewer(manifestNode) {
   if (!manifestNode || manifestNode.resource_type !== "seed") {
     return null;
   }
 
-  const normalizedPath = normalizePath(manifestNode.original_file_path || manifestNode.path || "");
-  const baseDomain = "https://tuva-public-resources.s3.amazonaws.com";
+  const hook = normalizePostHook(manifestNode.config?.post_hook);
 
-  if (normalizedPath.includes("seeds/terminology/")) {
+  if (!hook) {
+    return null;
+  }
+
+  const version = manifestNode.tuva_source?.assetVersion;
+  const prefix = manifestNode.tuva_source?.assetPrefix;
+  const bucket = manifestNode.tuva_source?.customBucketName || "tuva-public-resources";
+  let objectPath = null;
+  const coreMatch = hook.match(/load_versioned_seed\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]/);
+  const packageMatch = hook.match(/load_package_seed\(\s*['"]([^'"]+)['"]\s*,\s*var\(\s*['"]([^'"]+)['"]\s*\)\s*,\s*['"]([^'"]+)['"]/);
+  const semanticMatch = hook.match(/load_semantic_layer_seed\(\s*['"]([^'"]+)['"]/);
+  if (coreMatch) objectPath = `${coreMatch[1].replaceAll("_", "-")}/${coreMatch[2]}`;
+  if (packageMatch) {
+    if (packageMatch[1] !== prefix) throw new Error(`Asset prefix differs from loader for ${manifestNode.unique_id}.`);
+    objectPath = packageMatch[3];
+  }
+  if (semanticMatch) objectPath = semanticMatch[1];
+  if (prefix && version && objectPath) {
+    const base = manifestNode.tuva_source?.assetBaseUrl?.replace(/\/$/, "");
     return {
-      sourceType: "seed_preview",
-      family: "terminology",
-      version: "latest",
-      folder: "versioned_terminology",
-      fileName: path.posix.basename(normalizedPath),
-      downloadUrl: buildTerminologySeedDownloadUrl({ manifestNode, baseDomain })
+      sourceType: "seed_preview", version, folder: prefix, fileName: objectPath,
+      provenance: "dbt_post_hook", unavailableReason: null,
+      manifestUrl: base ? `${base}/_manifest.json` : buildS3DownloadUrl(bucket, `${prefix}/${version}/_manifest.json`),
+      downloadUrl: base ? `${base}/${ensureGzip(objectPath)}` : buildS3DownloadUrl(bucket, `${prefix}/${version}/${ensureGzip(objectPath)}`),
+      assetSource: base ? "configured_preview_snapshot" : "public_snapshot"
     };
   }
-
-  if (normalizedPath.includes("seeds/value_sets/")) {
-    const fileName = buildValueSetSeedObjectFileName({ manifestNode, normalizedPath });
-
-    return {
-      sourceType: "seed_preview",
-      family: "value_set",
-      version: "latest",
-      folder: "versioned_value_sets",
-      fileName: path.posix.basename(normalizedPath),
-      downloadUrl: fileName ? `${baseDomain}/versioned_value_sets/latest/${fileName}` : null
-    };
-  }
-
-  return null;
+  return resolveVersionedCoreSeedPreview(manifestNode, hook) || resolveStandaloneSeedPreview(manifestNode, hook) || {
+    sourceType: "seed_preview", downloadUrl: null,
+    unavailableReason: `Unrecognized package asset loader for ${manifestNode.unique_id}.`
+  };
 }
 
-function buildTerminologySeedDownloadUrl({ manifestNode, baseDomain }) {
-  const seedName = manifestNode?.name || "";
-  const datasetKey = seedName === "terminology__icd10_pcs_cms_ontology"
-    ? "icd_10_pcs_cms_ontology"
-    : seedName.replace(/^terminology__/, "");
-
-  if (!datasetKey || datasetKey === "provider") {
-    return null;
+function normalizePostHook(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry || "")).join("\n");
   }
 
-  return `${baseDomain}/versioned_terminology/latest/${datasetKey}.csv_0_0_0.csv.gz`;
+  return typeof value === "string" ? value : "";
 }
 
-function buildValueSetSeedObjectFileName({ manifestNode, normalizedPath }) {
-  const seedName = manifestNode?.name || path.posix.basename(normalizedPath).replace(/\.csv$/i, "");
+function resolveVersionedCoreSeedPreview(manifestNode, hook) {
+  const match = hook.match(
+    /load_versioned_seed\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?/
+  );
 
-  if (!seedName) {
+  if (!match) {
     return null;
   }
 
-  if (seedName === "encounter_group_sk" || seedName === "encounter_type_sk" || seedName === "predictor_encounter_xwalk") {
-    return `${seedName}.csv.gz`;
-  }
+  const family = match[1].replace(/-/g, "_");
+  const fileName = match[2];
+  const explicitVersion = match[3] || null;
+  const version = explicitVersion || manifestNode.tuva_source?.seedVersions?.[family] || null;
+  const folderByFamily = {
+    terminology: "terminology",
+    value_sets: "value-sets",
+    provider_data: "provider-data",
+    synthetic_data: "synthetic-data"
+  };
+  const folder = folderByFamily[family] || null;
+  const bucket =
+    manifestNode.tuva_source?.seedBuckets?.[family] ||
+    manifestNode.tuva_source?.seedBuckets?.[family.replace(/_/g, "-")] ||
+    manifestNode.tuva_source?.customBucketName ||
+    "tuva-public-resources";
 
-  if (seedName.startsWith("pqi__")) {
+  return {
+    sourceType: "seed_preview",
+    family,
+    version,
+    folder,
+    fileName,
+    provenance: "dbt_post_hook",
+    unavailableReason: !folder || !version ? "The dbt post-hook does not resolve to a pinned Tuva seed asset." : null,
+    downloadUrl: folder && version ? buildS3DownloadUrl(bucket, `${folder}/${version}/${ensureGzip(fileName)}`) : null
+  };
+}
+
+function resolveStandaloneSeedPreview(manifestNode, hook) {
+  if (!/load_seed\s*\(/.test(hook)) {
     return null;
   }
 
-  if (seedName === "ed_classification__categories") {
-    return "ed_classification_categories.csv_0_0_0.csv.gz";
-  }
+  const pathMatch = hook.match(/get_seed_bucket\([^)]*\)\s*~\s*['"]([^'"]+)['"]/);
+  const versionMatch = hook.match(
+    /var\(\s*['"]([^'"]*seed_version)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/
+  );
+  const csvMatches = Array.from(hook.matchAll(/['"]([^'"]+\.csv)['"]/g));
+  const fileName = csvMatches.at(-1)?.[1] || null;
+  const pathPrefix = pathMatch?.[1]?.replace(/^\/+|\/+$/g, "") || null;
+  const variableName = versionMatch?.[1] || null;
+  const defaultVersion = versionMatch?.[2] || null;
+  const version =
+    (variableName ? manifestNode.tuva_source?.seedVersionOverrides?.[variableName] : null) || defaultVersion;
+  const bucket = manifestNode.tuva_source?.customBucketName || "tuva-public-resources";
 
-  if (seedName.startsWith("ed_classification__")) {
-    return `${seedName.replace(/^ed_classification__/, "")}.csv_0_0_0.csv.gz`;
-  }
+  return {
+    sourceType: "seed_preview",
+    family: "standalone_package",
+    version,
+    folder: pathPrefix,
+    fileName,
+    provenance: "dbt_post_hook",
+    unavailableReason:
+      !pathPrefix || !version || !fileName
+        ? "The package seed post-hook does not expose a complete immutable preview path."
+        : null,
+    downloadUrl:
+      pathPrefix && version && fileName
+        ? buildS3DownloadUrl(bucket, `${pathPrefix}/${version}/${ensureGzip(fileName)}`)
+        : null
+  };
+}
 
-  if (seedName.startsWith("ccsr__")) {
-    return `${seedName.replace(/^ccsr__/, "")}.csv_0_0_0.csv.gz`;
-  }
+function ensureGzip(fileName) {
+  return fileName.endsWith(".gz") ? fileName : `${fileName}.gz`;
+}
 
-  if (seedName.startsWith("chronic_conditions__")) {
-    return `${seedName.replace(/^chronic_conditions__/, "")}.csv_0_0_0.csv.gz`;
-  }
-
-  if (seedName === "cms_hcc__disease_hierarchy_flat") {
-    return null;
-  }
-
-  if (seedName.startsWith("cms_hcc__")) {
-    return `${seedName.replace(/^cms_hcc__/, "cms_hcc_")}.csv_0_0_0.csv.gz`;
-  }
-
-  if (seedName.startsWith("data_quality__")) {
-    return `${seedName.replace(/^data_quality__/, "data_quality_")}.csv_0_0_0.csv.gz`;
-  }
-
-  if (seedName === "hcc_suspecting__hcc_descriptions") {
-    return "hcc_suspecting_descriptions.csv_0_0_0.csv.gz";
-  }
-
-  if (seedName.startsWith("hcc_suspecting__")) {
-    return `${seedName.replace(/^hcc_suspecting__/, "hcc_suspecting_")}.csv_0_0_0.csv.gz`;
-  }
-
-  if (seedName.startsWith("pharmacy__")) {
-    return `${seedName.replace(/^pharmacy__/, "")}.csv_0_0_0.csv.gz`;
-  }
-
-  if (seedName === "quality_measures__value_sets") {
-    return "quality_measures_value_set_codes.csv_0_0_0.csv.gz";
-  }
-
-  if (seedName.startsWith("quality_measures__")) {
-    return `${seedName.replace(/^quality_measures__/, "quality_measures_")}.csv_0_0_0.csv.gz`;
-  }
-
-  if (seedName.startsWith("readmissions__")) {
-    return `${seedName.replace(/^readmissions__/, "")}.csv_0_0_0.csv.gz`;
-  }
-
-  return `${seedName}.csv_0_0_0.csv.gz`;
+function buildS3DownloadUrl(bucket, objectPath) {
+  const normalizedBucket = String(bucket || "tuva-public-resources")
+    .replace(/^s3:\/\//, "")
+    .replace(/^\/+|\/+$/g, "");
+  const normalizedPath = String(objectPath || "").replace(/^\/+/, "");
+  return `https://${normalizedBucket}.s3.amazonaws.com/${normalizedPath}`;
 }
 
 function sortNodeType(nodeType) {
@@ -1987,7 +2083,8 @@ function resolveDocumentationReference(manifestNode) {
   const inputLayerEntryName = resolveInputLayerEntryName(manifestNode);
 
   if (inputLayerEntryName) {
-    const yamlPath = path.join(repoRoot, "models", "input_layer", `${inputLayerEntryName}.yml`);
+    const inputLayerRoot = packageRoots[manifestNode.package_name] || repoRoot;
+    const yamlPath = path.join(inputLayerRoot, "models", "input_layer", `${inputLayerEntryName}.yml`);
 
     if (existsSync(yamlPath)) {
       return {
@@ -2068,7 +2165,7 @@ function patchPathToAbsolute(patchPath) {
   return path.join(packageRoot, packageRelativePath.replace(/\?.*$/, ""));
 }
 
-function isVisibleSupportingSeed(node, target = null) {
+export function isVisibleSupportingSeed(node, target = null) {
   if (!node || node.resource_type !== "seed") {
     return false;
   }
@@ -2077,25 +2174,12 @@ function isVisibleSupportingSeed(node, target = null) {
   const seedPath = normalizePath(node.original_file_path || node.path || "");
 
   return (
+    Boolean(node.tuva_source?.assetPrefix) ||
     seedName.startsWith("terminology__") ||
     seedName.startsWith("value_set__") ||
     seedPath.includes("/terminology/") ||
     seedPath.includes("/value_sets/")
   );
-}
-
-function isPublicDataMartOutput(modelPath, groupName) {
-  if (!modelPath.startsWith(`models/data_marts/${groupName}/`)) {
-    return false;
-  }
-
-  const relativeSegments = modelPath.split("/").slice(3);
-
-  if (!relativeSegments.length || !modelPath.endsWith(".sql")) {
-    return false;
-  }
-
-  return !relativeSegments.includes("staging") && !relativeSegments.includes("intermediate");
 }
 
 function normalizePath(value) {
@@ -2126,10 +2210,11 @@ function sortTargetCategory(categoryKey) {
     claims_preprocessing: 3,
     core: 4,
     data_marts: 5,
-    semantic_layer: 6
+    extensions: 6,
+    semantic_layer: 7
   };
 
-  return priorities[categoryKey] || 99;
+  return priorities[categoryKey] ?? 99;
 }
 
 function uniqueStrings(values) {

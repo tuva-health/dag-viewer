@@ -52,7 +52,7 @@ const INITIAL_OPEN_NODE_ID = initialSearchParams.get("openNode");
 const INITIAL_EDIT_FIELD = initialSearchParams.get("edit");
 const INITIAL_MODAL_TAB = initialSearchParams.get("tab");
 const SYSTEM_OVERVIEW_TARGET_KEY = "system_overview";
-const SYSTEM_OVERVIEW_LAYOUT_VERSION = "32";
+const SYSTEM_OVERVIEW_LAYOUT_VERSION = "33";
 const SYSTEM_OVERVIEW_ENTRY_WIDTH = 204;
 const SYSTEM_OVERVIEW_ENTRY_HEIGHT = 52;
 const SYSTEM_OVERVIEW_STAGE_PADDING_X = 24;
@@ -75,6 +75,7 @@ const SYSTEM_OVERVIEW_STAGE_TITLES = Object.freeze({
   claimsPreprocessing: "Claims Preprocessing",
   coreDataModel: "Core Data Model",
   dataMarts: "Data Marts",
+  extensions: "Extensions",
   semanticLayer: "Semantic Layer"
 });
 
@@ -84,6 +85,7 @@ const SYSTEM_OVERVIEW_STAGE_DESCRIPTIONS = Object.freeze({
   claimsPreprocessing: "Reusable claims logic for enrollment flags, member months, service categories, encounters, and attribution.",
   coreDataModel: "Tuva Core's normalized, enriched longitudinal patient data model.",
   dataMarts: "Use-case-specific transformations that run on top of Tuva Core.",
+  extensions: "Optional interoperability and preprocessing packages that run on top of Tuva Core.",
   semanticLayer: "Metric-ready models and definitions for reporting, dashboards, and applications."
 });
 
@@ -151,12 +153,14 @@ const SYSTEM_OVERVIEW_ENTRY_LAYOUT = Object.freeze([
 
   { id: "mart-ccsr", targetKey: "ccsr", label: "AHRQ CCSRs", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 200 },
   { id: "mart-ahrq-quality-indicators", targetKey: "ahrq_quality_indicators", label: "AHRQ Quality Indicators", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 270 },
-  { id: "mart-chronic-conditions", targetKey: "chronic_conditions", label: "CMS Chronic Conditions", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 340 },
-  { id: "mart-cms-hcc", targetKey: "cms_hcc", label: "CMS-HCCs", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 410 },
+  { id: "mart-chronic-conditions", targetKey: "cms_chronic_conditions", label: "CMS Chronic Conditions", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 340 },
+  { id: "mart-cms-hcc", targetKey: "cms_hcc", label: "CMS HCC", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 410 },
   { id: "mart-quality-measures", targetKey: "quality_measures", label: "Quality Measures", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 480 },
-  { id: "mart-nyu-ed-classification", targetKey: "ed_classification", label: "NYU ED Classification", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 550 },
+  { id: "mart-nyu-ed-classification", targetKey: "nyu_ed_classification", label: "NYU ED Classification", stage: "dataMarts", group: "dataMartsAll", x: 2050, y: 550 },
 
-  { id: "semantic-layer", targetKey: "semantic_layer", label: "Semantic Layer", stage: "semanticLayer", group: "semanticLayerAll", x: 2050, y: 760 }
+  { id: "extension-fhir-preprocessing", targetKey: "fhir_preprocessing", label: "FHIR Preprocessing", stage: "extensions", group: "extensionsAll", x: 2340, y: 340 },
+
+  { id: "semantic-layer", targetKey: "semantic_layer", label: "Semantic Layer", stage: "semanticLayer", group: "semanticLayerAll", x: 2050, y: 830 }
 ]);
 
 const SYSTEM_OVERVIEW_CONNECTOR_SPECS = Object.freeze([
@@ -179,6 +183,10 @@ const SYSTEM_OVERVIEW_CONNECTOR_SPECS = Object.freeze([
   {
     from: { type: "stage", key: "coreDataModel", side: "right", alignEntryId: "core-encounter" },
     to: { type: "stage", key: "dataMarts", side: "left", alignEntryId: "mart-chronic-conditions" }
+  },
+  {
+    from: { type: "stage", key: "coreDataModel", side: "right", alignEntryId: "core-patient" },
+    to: { type: "stage", key: "extensions", side: "left", alignEntryId: "extension-fhir-preprocessing" }
   },
   {
     from: { type: "stage", key: "dataMarts", side: "bottom" },
@@ -263,7 +271,20 @@ const TARGET_PANEL_GROUP_DEFINITIONS = Object.freeze({
   "Data Marts": [
     {
       label: "Data Marts",
-      keys: ["ccsr", "ahrq_quality_indicators", "chronic_conditions", "cms_hcc", "quality_measures", "ed_classification"]
+      keys: [
+        "ccsr",
+        "ahrq_quality_indicators",
+        "cms_chronic_conditions",
+        "cms_hcc",
+        "quality_measures",
+        "nyu_ed_classification"
+      ]
+    }
+  ],
+  Extensions: [
+    {
+      label: "Extensions",
+      keys: ["fhir_preprocessing"]
     }
   ],
   "Semantic Layer": [
@@ -282,7 +303,7 @@ const nodeTypeColors = {
   terminology: "#fff3bf"
 };
 
-const outputDataModelCategories = new Set(["Core", "Data Marts", "Semantic Layer"]);
+const outputDataModelCategories = new Set(["Core", "Data Marts", "Extensions", "Semantic Layer"]);
 const nonDataModelOutputSchemas = new Set(["claims_preprocessing", "input_layer", "intermediate", "normalized_layer"]);
 const payerInputLayerTables = new Set(["eligibility", "medical_claim", "pharmacy_claim", "provider_attribution"]);
 
@@ -1290,6 +1311,7 @@ function renderHeaderActions() {
     `);
   }
 
+  if (IS_STATIC_MODE) actions.push('<a class="dag-header-action" href="./sources.html" target="_blank" rel="noreferrer">Sources</a>');
   actions.push(renderLegend());
   actions.push('<button class="dag-header-action" id="clear-button" type="button">Reset</button>');
 
@@ -1304,6 +1326,7 @@ function renderTargetPanel() {
     { label: "Claims Preprocessing", targets: getTargetsForCategory("Claims Preprocessing") },
     { label: "Core", targets: getTargetsForCategory("Core") },
     { label: "Data Marts", targets: getTargetsForCategory("Data Marts") },
+    { label: "Extensions", targets: getTargetsForCategory("Extensions") },
     { label: "Semantic Layer", targets: getTargetsForCategory("Semantic Layer") }
   ]
     .filter((category) => category.targets.length)
@@ -1707,7 +1730,9 @@ function renderNodeHeaderMetadata(node) {
   const rows = [
     ["dag", getNodeHeaderDag(node)],
     ["schema", getNodeHeaderSchema(node)],
-    ["model", getNodeHeaderPath(node)]
+    ["model", getNodeHeaderPath(node)],
+    ["package", node.technical?.packageName],
+    ["revision", node.technical?.revision?.slice(0, 12)]
   ].filter(([, value]) => Boolean(value));
 
   if (!rows.length) {

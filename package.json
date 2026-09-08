@@ -6,10 +6,12 @@
   "scripts": {
     "audit:edges": "node scripts/audit-lineage-edges.mjs",
     "audit:overview": "node scripts/audit-overview-targets.mjs",
+    "audit:sources": "node scripts/audit-source-set.mjs",
     "build": "node scripts/build-static-data.mjs",
-    "build:local": "TUVA_CORE_PATH=../tuva-core node scripts/build-static-data.mjs",
+    "build:local": "TUVA_CORE_PATH=../tuva-core TUVA_DAG_USE_LOCAL_CANDIDATES=true node scripts/build-static-data.mjs",
     "dev": "node scripts/dev-server.mjs",
-    "serve": "python3 -m http.server 4174 --bind 127.0.0.1 --directory dist"
+    "serve": "python3 -m http.server 4174 --bind 127.0.0.1 --directory dist",
+    "test": "node --test"
   },
   "dependencies": {
     "yaml": "^2.7.0"
